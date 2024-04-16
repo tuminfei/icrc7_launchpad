@@ -1,0 +1,17 @@
+{
+  "canisters": {
+    "icrc7_launchpad_backend": {
+      "candid": "src/icrc7_launchpad_backend/icrc7_launchpad_backend.did",
+      "package": "icrc7_launchpad_backend",
+      "type": "rust"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
