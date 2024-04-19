@@ -36,6 +36,11 @@ pub enum TransactionType {
         to: Account,
         exp_sec: Option<u64>,
     },
+    ApproveCollection {
+        from: Account,
+        to: Account,
+        exp_sec: Option<u64>,
+    },
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone, Default)]
@@ -252,6 +257,9 @@ impl Transaction {
                 exp_sec.clone(),
                 memo,
             ),
+            TransactionType::ApproveCollection { from, to, exp_sec } => {
+                Self::approve_collection(at, from.clone(), to.clone(), exp_sec.clone(), memo)
+            }
         };
         return transaction;
     }

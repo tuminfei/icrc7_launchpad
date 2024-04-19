@@ -1,10 +1,14 @@
 use std::{cell::RefCell, collections::HashMap};
 
 use crate::{
-    errors::{ApproveTokenError, BurnError, InsertTransactionError, MintError, TransferError},
+    errors::{
+        ApproveCollectionError, ApproveTokenError, BurnError, InsertTransactionError, MintError,
+        TransferError,
+    },
     icrc37_types::{
         ApprovalInfo, ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg,
-        ApproveTokenResult, CollectionApprovalAccount, LedgerInfo, Metadata, TokenApprovalInfo,
+        ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata, TokenApprovalInfo,
+        UserAccount,
     },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
@@ -139,7 +143,7 @@ pub struct State {
     #[serde(skip, default = "get_token_approvals_memory")]
     pub token_approvals: StableBTreeMap<u128, TokenApprovalInfo, Memory>,
     #[serde(skip, default = "get_collection_approvals_memory")]
-    pub collection_approvals: StableBTreeMap<CollectionApprovalAccount, ApprovalInfo, Memory>,
+    pub collection_approvals: StableBTreeMap<UserAccount, CollectionApprovalInfo, Memory>,
 }
 
 impl Default for State {
@@ -741,12 +745,120 @@ impl State {
         txn_results
     }
 
+    fn mock_collection_approve(
+        &self,
+        caller: &Account,
+        arg: &ApproveCollectionArg,
+        current_time: &u64,
+    ) -> Result<(), ApproveCollectionError> {
+        if arg.approval_info.spender == *caller {
+            return Err(ApproveCollectionError::InvalidSpender);
+        };
+        if let Some(expires_at) = arg.approval_info.expires_at {
+            if expires_at < *current_time {
+                return Err(ApproveCollectionError::TooOld);
+            }
+        }
+
+        if let Some(ref memo) = arg.approval_info.memo {
+            let max_memo_size = self
+                .icrc7_max_memo_size
+                .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
+            if memo.len() as u32 > max_memo_size {
+                return Err(ApproveCollectionError::GenericError {
+                    error_code: 3,
+                    message: "Exceeds Max Memo Size".into(),
+                });
+            }
+        };
+        Ok(())
+    }
+
     pub fn collection_approve(
         &mut self,
         caller: &Principal,
         mut args: Vec<ApproveCollectionArg>,
     ) -> Vec<Option<ApproveCollectionResult>> {
-        let txn_results: Vec<Option<ApproveCollectionResult>> = vec![None; args.len()];
+        if args.len() == 0 {
+            return vec![Some(Err(ApproveCollectionError::GenericBatchError {
+                error_code: 1,
+                message: "No Arguments Provided".into(),
+            }))];
+        }
+
+        let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
+
+        if args.len() > max_update_batch_size as usize {
+            return vec![Some(Err(ApproveCollectionError::GenericBatchError {
+                error_code: 2,
+                message: "Exceeds max update batch size".into(),
+            }))];
+        }
+
+        let mut txn_results: Vec<Option<ApproveCollectionResult>> = vec![None; args.len()];
+        let current_time = ic_cdk::api::time();
+
+        for (index, arg) in args.iter_mut().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.approval_info.from_subaccount,
+            });
+            if let Err(e) = self.mock_collection_approve(&caller, arg, &current_time) {
+                txn_results.insert(index, Some(Err(e)))
+            }
+        }
+        if let Some(true) = self.icrc7_atomic_batch_transfers {
+            if txn_results
+                .iter()
+                .any(|res| res.is_some() && res.as_ref().unwrap().is_err())
+            {
+                return txn_results;
+            }
+        }
+
+        for (index, arg) in args.iter().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.approval_info.from_subaccount,
+            });
+            let user_account = UserAccount::new(caller);
+            if let Some(Err(e)) = txn_results.get(index).unwrap() {
+                match e {
+                    &ApproveCollectionError::GenericBatchError {
+                        error_code: _,
+                        message: _,
+                    } => return txn_results,
+                    _ => continue,
+                }
+            }
+
+            match self.collection_approvals.get(&user_account) {
+                None => {
+                    let collection_approval = CollectionApprovalInfo::new(
+                        arg.approval_info.spender,
+                        arg.approval_info.clone(),
+                    );
+                    self.collection_approvals
+                        .insert(user_account, collection_approval);
+                }
+                Some(mut collection_approval) => {
+                    collection_approval
+                        .approve(arg.approval_info.spender, arg.approval_info.clone());
+                }
+            }
+
+            let tid = self.log_transaction(
+                TransactionType::ApproveCollection {
+                    from: caller,
+                    to: arg.approval_info.spender,
+                    exp_sec: arg.approval_info.expires_at,
+                },
+                ic_cdk::api::time(),
+                arg.approval_info.memo.clone(),
+            );
+            txn_results.insert(index, Some(Ok(tid)))
+        }
+
         return txn_results;
     }
 

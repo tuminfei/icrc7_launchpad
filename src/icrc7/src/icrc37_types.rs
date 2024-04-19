@@ -15,6 +15,27 @@ use crate::errors::{
 
 pub type Metadata = Map;
 
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UserAccount(Account);
+
+impl Storable for UserAccount {
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(Encode!(self).unwrap())
+    }
+
+    const BOUND: Bound = Bound::Unbounded;
+}
+
+impl UserAccount {
+    pub fn new(user: Account) -> Self {
+        UserAccount(user)
+    }
+}
+
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct LedgerInfo {
     pub max_approvals_per_token_or_collection: u16,
@@ -109,6 +130,33 @@ impl TokenApprovalInfo {
     }
 }
 
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+pub struct CollectionApprovalInfo(BTreeMap<Account, ApprovalInfo>);
+
+impl Storable for CollectionApprovalInfo {
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(Encode!(self).unwrap())
+    }
+
+    const BOUND: Bound = Bound::Unbounded;
+}
+
+impl CollectionApprovalInfo {
+    pub fn new(spender: Account, approval: ApprovalInfo) -> Self {
+        let mut collection_approval = BTreeMap::new();
+        collection_approval.insert(spender, approval);
+        CollectionApprovalInfo(collection_approval)
+    }
+
+    pub fn approve(&mut self, spender: Account, approval: ApprovalInfo) {
+        self.0.insert(spender, approval);
+    }
+}
+
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CollectionApprovalAccount {
     pub owner: Account,
@@ -151,7 +199,7 @@ pub struct TokenApproval {
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct ApproveCollectionArg {
-    approval_info: ApprovalInfo,
+    pub approval_info: ApprovalInfo,
 }
 
 pub type ApproveTokenResult = Result<u128, ApproveTokenError>;
