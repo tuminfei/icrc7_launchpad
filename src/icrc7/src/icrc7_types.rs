@@ -10,12 +10,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::{BurnError, InsertTransactionError, MintError, TransferError};
 
+pub static TRANSACTION_TRANSFER_OP: &str = "7xfer";
+
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub enum TransactionType {
     Mint {
         tid: u128,
         from: Account,
         to: Account,
+        meta: Icrc7TokenMetadata,
     },
     Burn {
         tid: u128,
@@ -31,16 +34,227 @@ pub enum TransactionType {
         tid: u128,
         from: Account,
         to: Account,
+        exp_sec: Option<u64>,
     },
 }
 
-#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Transaction {
-    pub at: u64,
-    pub txn_id: u128,
-    pub op: String,
-    pub txn_type: TransactionType,
+    pub ts: u64,
+    pub op: String, // "7mint" | "7burn" | "7xfer" | "7update" | "37appr" | "37appr_coll | "37revoke" | "37revoke_coll" | "37xfer"
+    pub tid: u128,
+    pub from: Option<Account>,
+    pub to: Option<Account>,
+    pub spender: Option<Account>,
+    pub exp: Option<u64>,
+    pub meta: Option<Icrc7TokenMetadata>,
     pub memo: Option<Vec<u8>>,
+}
+
+impl Transaction {
+    pub fn mint(
+        now_sec: u64,
+        tid: u128,
+        from: Option<Account>,
+        to: Account,
+        meta: Icrc7TokenMetadata,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "7mint".to_string(),
+            tid,
+            from,
+            to: Some(to),
+            meta: Some(meta),
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn burn(
+        now_sec: u64,
+        tid: u128,
+        from: Account,
+        to: Option<Account>,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "7burn".to_string(),
+            tid,
+            from: Some(from),
+            to,
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn transfer(
+        now_sec: u64,
+        tid: u128,
+        from: Account,
+        to: Account,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "7xfer".to_string(),
+            tid,
+            from: Some(from),
+            to: Some(to),
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn update(
+        now_sec: u64,
+        tid: u128,
+        from: Account,
+        meta: Icrc7TokenMetadata,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "7update".to_string(),
+            tid,
+            from: Some(from),
+            meta: Some(meta),
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn approve(
+        now_sec: u64,
+        tid: u128,
+        from: Account,
+        spender: Account,
+        exp_sec: Option<u64>,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "37appr".to_string(),
+            tid,
+            from: Some(from),
+            spender: Some(spender),
+            exp: exp_sec,
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn approve_collection(
+        now_sec: u64,
+        from: Account,
+        spender: Account,
+        exp_sec: Option<u64>,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "37appr_coll".to_string(),
+            from: Some(from),
+            spender: Some(spender),
+            exp: exp_sec,
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn revoke(
+        now_sec: u64,
+        tid: u128,
+        from: Account,
+        spender: Option<Account>,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "37revoke".to_string(),
+            tid,
+            from: Some(from),
+            spender,
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn revoke_collection(
+        now_sec: u64,
+        from: Account,
+        spender: Option<Account>,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "37revoke_coll".to_string(),
+            from: Some(from),
+            spender,
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn transfer_from(
+        now_sec: u64,
+        tid: u128,
+        from: Account,
+        to: Account,
+        spender: Account,
+        memo: Option<Vec<u8>>,
+    ) -> Self {
+        Transaction {
+            ts: now_sec,
+            op: "37xfer".to_string(),
+            tid,
+            from: Some(from),
+            to: Some(to),
+            spender: Some(spender),
+            memo,
+            ..Default::default()
+        }
+    }
+
+    pub fn new(_txn_id: u128, txn_type: TransactionType, at: u64, memo: Option<Vec<u8>>) -> Self {
+        let transaction = match &txn_type {
+            TransactionType::Transfer { tid, from, to } => {
+                Self::transfer(at, tid.clone(), from.clone(), to.clone(), memo)
+            }
+            TransactionType::Mint {
+                tid,
+                from,
+                to,
+                meta,
+            } => Self::mint(
+                at,
+                tid.clone(),
+                Some(from.clone()),
+                to.clone(),
+                meta.clone(),
+                memo,
+            ),
+            TransactionType::Burn { tid, from, to } => {
+                Self::burn(at, tid.clone(), from.clone(), Some(to.clone()), memo)
+            }
+            TransactionType::Approval {
+                tid,
+                from,
+                to,
+                exp_sec,
+            } => Self::approve(
+                at,
+                tid.clone(),
+                from.clone(),
+                to.clone(),
+                exp_sec.clone(),
+                memo,
+            ),
+        };
+        return transaction;
+    }
 }
 
 impl Storable for Transaction {
@@ -53,40 +267,6 @@ impl Storable for Transaction {
     }
 
     const BOUND: Bound = Bound::Unbounded;
-}
-
-impl Transaction {
-    pub fn new(txn_id: u128, txn_type: TransactionType, at: u64, memo: Option<Vec<u8>>) -> Self {
-        let op = match &txn_type {
-            TransactionType::Transfer {
-                tid: _,
-                from: _,
-                to: _,
-            } => "transfer".into(),
-            TransactionType::Mint {
-                tid: _,
-                from: _,
-                to: _,
-            } => "mint".into(),
-            TransactionType::Burn {
-                tid: _,
-                from: _,
-                to: _,
-            } => "burn".into(),
-            TransactionType::Approval {
-                tid: _,
-                from: _,
-                to: _,
-            } => "approve".into(),
-        };
-        Self {
-            op,
-            txn_id,
-            at,
-            txn_type,
-            memo,
-        }
-    }
 }
 
 #[derive(CandidType, Deserialize, Clone, Debug)]
@@ -134,24 +314,14 @@ pub struct InitArg {
     pub icrc7_description: Option<String>,
     pub icrc7_logo: Option<String>,
     pub icrc7_supply_cap: Option<u128>,
-    pub icrc7_max_query_batch_size: Option<u128>,
-    pub icrc7_max_update_batch_size: Option<u128>,
-    pub icrc7_max_take_value: Option<u128>,
-    pub icrc7_default_take_value: Option<u128>,
-    pub icrc7_max_memo_size: Option<u128>,
+    pub icrc7_max_query_batch_size: Option<u16>,
+    pub icrc7_max_update_batch_size: Option<u16>,
+    pub icrc7_max_take_value: Option<u16>,
+    pub icrc7_default_take_value: Option<u16>,
+    pub icrc7_max_memo_size: Option<u32>,
     pub icrc7_atomic_batch_transfers: Option<bool>,
     pub tx_window: Option<u64>,
     pub permitted_drift: Option<u64>,
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct InitApprovalsArg {
-    pub deployer: Account,
-    pub max_approvals: u128,
-    pub max_approvals_per_token_or_collection: Option<u128>,
-    pub max_revoke_approvals: Option<u128>,
-    pub settle_to_approvals: Option<u128>,
-    pub collection_approval_requires_token: Option<bool>,
 }
 
 #[derive(CandidType)]

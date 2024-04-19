@@ -17,10 +17,10 @@ pub type Metadata = Map;
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct LedgerInfo {
-    pub max_approvals_per_token_or_collection: u128,
-    pub max_revoke_approvals: u128,
-    pub max_approvals: u128,
-    pub settle_to_approvals: u128,
+    pub max_approvals_per_token_or_collection: u16,
+    pub max_revoke_approvals: u16,
+    pub max_approvals: u16,
+    pub settle_to_approvals: u16,
     pub collection_approval_requires_token: bool,
 }
 
@@ -28,9 +28,9 @@ impl Default for LedgerInfo {
     fn default() -> Self {
         Self {
             max_approvals_per_token_or_collection: 10000,
-            max_revoke_approvals: 100000,
+            max_revoke_approvals: 10000,
             max_approvals: crate::state::State::DEFAULT_MAX_UPDATE_BATCH_SIZE,
-            settle_to_approvals: 99750,
+            settle_to_approvals: 9975,
             collection_approval_requires_token: true,
         }
     }
@@ -125,6 +125,16 @@ impl Storable for CollectionApprovalAccount {
     }
 
     const BOUND: Bound = Bound::Unbounded;
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct InitApprovalsArg {
+    pub deployer: Account,
+    pub max_approvals: u16,
+    pub max_approvals_per_token_or_collection: Option<u16>,
+    pub max_revoke_approvals: Option<u16>,
+    pub settle_to_approvals: Option<u16>,
+    pub collection_approval_requires_token: Option<bool>,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]

@@ -15,7 +15,7 @@ use crate::{
         get_token_map_memory, Memory,
     },
     utils::{account_transformer, burn_account},
-    BurnArg, SyncReceipt,
+    BurnArg, SyncReceipt, TRANSACTION_TRANSFER_OP,
 };
 use candid::{CandidType, Decode, Encode, Principal};
 use ic_stable_structures::{
@@ -118,11 +118,11 @@ pub struct State {
     pub icrc7_logo: Option<String>,
     pub icrc7_total_supply: u128,
     pub icrc7_supply_cap: Option<u128>,
-    pub icrc7_max_query_batch_size: Option<u128>,
-    pub icrc7_max_update_batch_size: Option<u128>,
-    pub icrc7_max_take_value: Option<u128>,
-    pub icrc7_default_take_value: Option<u128>,
-    pub icrc7_max_memo_size: Option<u128>,
+    pub icrc7_max_query_batch_size: Option<u16>,
+    pub icrc7_max_update_batch_size: Option<u16>,
+    pub icrc7_max_take_value: Option<u16>,
+    pub icrc7_default_take_value: Option<u16>,
+    pub icrc7_max_memo_size: Option<u32>,
     pub icrc7_atomic_batch_transfers: Option<bool>,
     pub tx_window: Option<u64>,
     pub permitted_drift: Option<u64>,
@@ -175,11 +175,11 @@ impl Default for State {
 }
 
 impl State {
-    pub const DEFAULT_MAX_QUERY_BATCH_SIZE: u128 = 32;
-    pub const DEFAULT_MAX_UPDATE_BATCH_SIZE: u128 = 32;
+    pub const DEFAULT_MAX_QUERY_BATCH_SIZE: u16 = 32;
+    pub const DEFAULT_MAX_UPDATE_BATCH_SIZE: u16 = 32;
     pub const DEFAULT_TAKE_VALUE: u128 = 32;
     pub const DEFAULT_MAX_TAKE_VALUE: u128 = 32;
-    pub const DEFAULT_MAX_MEMO_SIZE: u128 = 32;
+    pub const DEFAULT_MAX_MEMO_SIZE: u32 = 32;
     pub const DEFAULT_TX_WINDOW: u64 = 24 * 60 * 60 * 1000_000_000;
     pub const DEFAULT_PERMITTED_DRIFT: u64 = 2 * 60 * 1000_000_000;
 
@@ -211,23 +211,23 @@ impl State {
         self.minting_authority.clone()
     }
 
-    pub fn icrc7_max_query_batch_size(&self) -> Option<u128> {
+    pub fn icrc7_max_query_batch_size(&self) -> Option<u16> {
         self.icrc7_max_query_batch_size
     }
 
-    pub fn icrc7_max_update_batch_size(&self) -> Option<u128> {
+    pub fn icrc7_max_update_batch_size(&self) -> Option<u16> {
         self.icrc7_max_update_batch_size
     }
 
-    pub fn icrc7_default_take_value(&self) -> Option<u128> {
+    pub fn icrc7_default_take_value(&self) -> Option<u16> {
         self.icrc7_default_take_value
     }
 
-    pub fn icrc7_max_take_value(&self) -> Option<u128> {
+    pub fn icrc7_max_take_value(&self) -> Option<u16> {
         self.icrc7_max_take_value
     }
 
-    pub fn icrc7_max_memo_size(&self) -> Option<u128> {
+    pub fn icrc7_max_memo_size(&self) -> Option<u32> {
         self.icrc7_max_memo_size
     }
 
@@ -293,33 +293,26 @@ impl State {
         let mut count = self.txn_count;
         while count != 0 {
             let txn = self.txn_log.get(&count).unwrap();
-            if txn.at < *allowed_past_time {
+            if txn.ts < *allowed_past_time {
                 return Ok(());
             }
-            match txn.txn_type {
-                TransactionType::Transfer {
-                    ref tid,
-                    ref from,
-                    ref to,
-                } => {
-                    if &args.token_id == tid
-                        && caller == from
-                        && &args.to == to
-                        && args.memo == txn.memo
-                        && args.created_at_time == Some(txn.at)
-                    {
-                        return Err(TransferError::Duplicate {
-                            duplicate_of: count,
-                        });
-                    } else {
-                        count -= 1;
-                        continue;
-                    }
-                }
-                _ => {
+            if txn.op == String::from(TRANSACTION_TRANSFER_OP) {
+                if args.token_id == txn.tid
+                    && caller == txn.from.as_ref().unwrap()
+                    && args.to == txn.to.unwrap()
+                    && args.memo == txn.memo
+                    && args.created_at_time == Some(txn.ts)
+                {
+                    return Err(TransferError::Duplicate {
+                        duplicate_of: count,
+                    });
+                } else {
                     count -= 1;
                     continue;
                 }
+            } else {
+                count -= 1;
+                continue;
             }
         }
         Ok(())
@@ -379,7 +372,7 @@ impl State {
             let max_memo_size = self
                 .icrc7_max_memo_size
                 .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
-            if memo.len() as u128 > max_memo_size {
+            if memo.len() as u32 > max_memo_size {
                 return Err(TransferError::GenericError {
                     error_code: 3,
                     message: "Exceeds Max Memo Size".into(),
@@ -414,7 +407,7 @@ impl State {
             .icrc7_max_query_batch_size
             .unwrap_or(State::DEFAULT_MAX_UPDATE_BATCH_SIZE);
         let mut txn_results = vec![None; args.len()];
-        if args.len() as u128 > max_update_batch_size {
+        if args.len() as u16 > max_update_batch_size {
             txn_results[0] = Some(Err(TransferError::GenericBatchError {
                 error_code: 2,
                 message: "Exceed Max allowed Update Batch Size".into(),
@@ -499,7 +492,7 @@ impl State {
             let allowed_memo_length = self
                 .icrc7_max_memo_size
                 .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
-            if memo.len() as u128 > allowed_memo_length {
+            if memo.len() as u32 > allowed_memo_length {
                 return Err(MintError::GenericError {
                     error_code: 7,
                     message: "Exceeds Allowed Memo Length".into(),
@@ -533,13 +526,16 @@ impl State {
             arg.token_logo,
             arg.to.clone(),
         );
+        let token_metadata = token.token_metadata();
         self.tokens.insert(arg.token_id, token);
         self.next_token_id = arg.token_id + 1;
+
         let txn_id = self.log_transaction(
             TransactionType::Mint {
                 tid: arg.token_id,
                 from: caller,
                 to: arg.to,
+                meta: token_metadata,
             },
             ic_cdk::api::time(),
             arg.memo,
@@ -549,7 +545,7 @@ impl State {
 
     fn mock_burn(&self, caller: &Account, arg: &BurnArg) -> Result<(), BurnError> {
         if let Some(ref memo) = arg.memo {
-            if memo.len() as u128
+            if memo.len() as u32
                 > self
                     .icrc7_max_memo_size
                     .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE)
@@ -646,7 +642,7 @@ impl State {
             let max_memo_size = self
                 .icrc7_max_memo_size
                 .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
-            if memo.len() as u128 > max_memo_size {
+            if memo.len() as u32 > max_memo_size {
                 return Err(ApproveTokenError::GenericError {
                     error_code: 3,
                     message: "Exceeds Max Memo Size".into(),
@@ -735,6 +731,7 @@ impl State {
                     tid: arg.token_id,
                     from: caller,
                     to: arg.approval_info.spender,
+                    exp_sec: arg.approval_info.expires_at,
                 },
                 ic_cdk::api::time(),
                 arg.approval_info.memo.clone(),
@@ -754,7 +751,7 @@ impl State {
     }
 
     pub fn icrc7_token_metadata(&self, token_ids: &[u128]) -> Vec<Option<Icrc7TokenMetadata>> {
-        if token_ids.len() as u128
+        if token_ids.len() as u16
             > self
                 .icrc7_max_query_batch_size
                 .unwrap_or(State::DEFAULT_MAX_QUERY_BATCH_SIZE)

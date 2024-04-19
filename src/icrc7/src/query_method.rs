@@ -40,27 +40,27 @@ pub fn icrc7_minting_authority() -> Option<Account> {
 }
 
 #[query]
-pub fn icrc7_max_query_batch_size() -> Option<u128> {
+pub fn icrc7_max_query_batch_size() -> Option<u16> {
     STATE.with(|s| s.borrow().icrc7_max_query_batch_size())
 }
 
 #[query]
-pub fn icrc7_max_update_batch_size() -> Option<u128> {
+pub fn icrc7_max_update_batch_size() -> Option<u16> {
     STATE.with(|s| s.borrow().icrc7_max_update_batch_size())
 }
 
 #[query]
-pub fn icrc7_default_take_value() -> Option<u128> {
+pub fn icrc7_default_take_value() -> Option<u16> {
     STATE.with(|s| s.borrow().icrc7_default_take_value())
 }
 
 #[query]
-pub fn icrc7_max_take_value() -> Option<u128> {
+pub fn icrc7_max_take_value() -> Option<u16> {
     STATE.with(|s| s.borrow().icrc7_max_take_value())
 }
 
 #[query]
-pub fn icrc7_max_memo_size() -> Option<u128> {
+pub fn icrc7_max_memo_size() -> Option<u32> {
     STATE.with(|s| s.borrow().icrc7_max_memo_size())
 }
 

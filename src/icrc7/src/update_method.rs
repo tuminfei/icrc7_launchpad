@@ -64,7 +64,7 @@ pub async fn icrc7_archive_logs() -> SyncReceipt {
 
     let txn_logs: Vec<Transaction> = STATE.with(|s| s.borrow().get_txn_logs(200));
 
-    let txn_ids: Vec<u128> = txn_logs.iter().map(|log| log.txn_id).collect();
+    let txn_ids: Vec<u128> = txn_logs.iter().map(|log| log.tid).collect();
 
     // set pending
     STATE.with(|s| {
