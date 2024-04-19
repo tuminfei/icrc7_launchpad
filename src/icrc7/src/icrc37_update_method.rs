@@ -25,6 +25,7 @@ pub fn icrc37_approve_collection(
     STATE.with(|s| s.borrow_mut().collection_approve(&caller, args))
 }
 
+// Revokes the specified approvals for a token given by `token_id` from the set of active approvals.
 #[ic_cdk::update(guard = "authenticated_guard")]
 pub fn icrc37_revoke_token_approvals(
     args: Vec<RevokeTokenApprovalArg>,

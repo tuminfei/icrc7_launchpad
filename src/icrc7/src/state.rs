@@ -1089,7 +1089,7 @@ impl State {
             }
 
             let tid = self.log_transaction(
-                TransactionType::CollectionRevoke {
+                TransactionType::RevokeCollection {
                     from: caller,
                     to: arg.spender,
                 },
