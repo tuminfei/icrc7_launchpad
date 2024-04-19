@@ -46,6 +46,10 @@ pub enum TransactionType {
         from: Account,
         to: Option<Account>,
     },
+    CollectionRevoke {
+        from: Account,
+        to: Option<Account>,
+    },
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone, Default)]
@@ -267,6 +271,9 @@ impl Transaction {
             }
             TransactionType::Revoke { tid, from, to } => {
                 Self::revoke(at, tid.clone(), from.clone(), to.clone(), memo)
+            }
+            TransactionType::CollectionRevoke { from, to } => {
+                Self::revoke_collection(at, from.clone(), to.clone(), memo)
             }
         };
         return transaction;

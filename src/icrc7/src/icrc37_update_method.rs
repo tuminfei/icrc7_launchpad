@@ -4,7 +4,8 @@ use crate::{
     guards::authenticated_guard,
     icrc37_types::{
         ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg, ApproveTokenResult,
-        RevokeTokenApprovalArg, RevokeTokenApprovalResult,
+        RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
+        RevokeTokenApprovalResult,
     },
     state::STATE,
 };
@@ -31,4 +32,14 @@ pub fn icrc37_revoke_token_approvals(
     let caller = ic_cdk::caller();
 
     STATE.with(|s| s.borrow_mut().revoke_approve(&caller, args))
+}
+
+// Revokes collection-level approvals from the set of active approvals.
+#[ic_cdk::update(guard = "authenticated_guard")]
+pub fn icrc37_revoke_collection_approvals(
+    args: Vec<RevokeCollectionApprovalArg>,
+) -> Vec<Option<RevokeCollectionApprovalResult>> {
+    let caller = ic_cdk::caller();
+
+    STATE.with(|s| s.borrow_mut().revoke_collection_approve(&caller, args))
 }

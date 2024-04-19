@@ -3,11 +3,12 @@ use std::{cell::RefCell, collections::HashMap};
 use crate::{
     errors::{
         ApproveCollectionError, ApproveTokenError, BurnError, InsertTransactionError, MintError,
-        RevokeTokenApprovalError, TransferError,
+        RevokeCollectionApprovalError, RevokeTokenApprovalError, TransferError,
     },
     icrc37_types::{
         ApprovalInfo, ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg,
-        ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata, RevokeTokenApprovalArg,
+        ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata,
+        RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
         RevokeTokenApprovalResult, TokenApprovalInfo, UserAccount,
     },
     icrc7_types::{
@@ -670,7 +671,7 @@ impl State {
         mut args: Vec<ApproveTokenArg>,
     ) -> Vec<Option<ApproveTokenResult>> {
         if args.len() == 0 {
-            return vec![Some(Err(ApproveTokenError::GenericBatchError {
+            return vec![Some(Err(ApproveTokenError::GenericError {
                 error_code: 1,
                 message: "No Arguments Provided".into(),
             }))];
@@ -679,7 +680,7 @@ impl State {
         let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
 
         if args.len() > max_update_batch_size as usize {
-            return vec![Some(Err(ApproveTokenError::GenericBatchError {
+            return vec![Some(Err(ApproveTokenError::GenericError {
                 error_code: 2,
                 message: "Exceeds max update batch size".into(),
             }))];
@@ -780,7 +781,7 @@ impl State {
         mut args: Vec<ApproveCollectionArg>,
     ) -> Vec<Option<ApproveCollectionResult>> {
         if args.len() == 0 {
-            return vec![Some(Err(ApproveCollectionError::GenericBatchError {
+            return vec![Some(Err(ApproveCollectionError::GenericError {
                 error_code: 1,
                 message: "No Arguments Provided".into(),
             }))];
@@ -789,7 +790,7 @@ impl State {
         let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
 
         if args.len() > max_update_batch_size as usize {
-            return vec![Some(Err(ApproveCollectionError::GenericBatchError {
+            return vec![Some(Err(ApproveCollectionError::GenericError {
                 error_code: 2,
                 message: "Exceeds max update batch size".into(),
             }))];
@@ -905,7 +906,7 @@ impl State {
         mut args: Vec<RevokeTokenApprovalArg>,
     ) -> Vec<Option<RevokeTokenApprovalResult>> {
         if args.len() == 0 {
-            return vec![Some(Err(RevokeTokenApprovalError::GenericBatchError {
+            return vec![Some(Err(RevokeTokenApprovalError::GenericError {
                 error_code: 1,
                 message: "No Arguments Provided".into(),
             }))];
@@ -914,7 +915,7 @@ impl State {
         let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
 
         if args.len() > max_update_batch_size as usize {
-            return vec![Some(Err(RevokeTokenApprovalError::GenericBatchError {
+            return vec![Some(Err(RevokeTokenApprovalError::GenericError {
                 error_code: 2,
                 message: "Exceeds max update batch size".into(),
             }))];
@@ -967,6 +968,128 @@ impl State {
             let tid = self.log_transaction(
                 TransactionType::Revoke {
                     tid: arg.token_id,
+                    from: caller,
+                    to: arg.spender,
+                },
+                ic_cdk::api::time(),
+                arg.memo.clone(),
+            );
+            txn_results.insert(index, Some(Ok(tid)))
+        }
+        return txn_results;
+    }
+
+    fn mock_revoke_collection_approve(
+        &self,
+        caller: &Account,
+        arg: &RevokeCollectionApprovalArg,
+        current_time: &u64,
+    ) -> Result<(), RevokeCollectionApprovalError> {
+        if let Some(spender) = arg.spender {
+            if spender == *caller {
+                return Err(RevokeCollectionApprovalError::GenericBatchError {
+                    error_code: 1,
+                    message: "Spender cannot be caller".into(),
+                });
+            }
+        }
+        if let Some(created_at_time) = arg.created_at_time {
+            let allowed_future_time = *current_time
+                + self
+                    .permitted_drift
+                    .unwrap_or(State::DEFAULT_PERMITTED_DRIFT);
+
+            if created_at_time < allowed_future_time {
+                return Err(RevokeCollectionApprovalError::TooOld);
+            }
+        }
+
+        if let Some(ref memo) = arg.memo {
+            let max_memo_size = self
+                .icrc7_max_memo_size
+                .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
+            if memo.len() as u32 > max_memo_size {
+                return Err(RevokeCollectionApprovalError::GenericBatchError {
+                    error_code: 3,
+                    message: "Exceeds Max Memo Size".into(),
+                });
+            }
+        };
+        Ok(())
+    }
+
+    pub fn revoke_collection_approve(
+        &mut self,
+        caller: &Principal,
+        mut args: Vec<RevokeCollectionApprovalArg>,
+    ) -> Vec<Option<RevokeCollectionApprovalResult>> {
+        if args.len() == 0 {
+            return vec![Some(Err(RevokeCollectionApprovalError::GenericError {
+                error_code: 1,
+                message: "No Arguments Provided".into(),
+            }))];
+        }
+
+        let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
+
+        if args.len() > max_update_batch_size as usize {
+            return vec![Some(Err(RevokeCollectionApprovalError::GenericError {
+                error_code: 2,
+                message: "Exceeds max update batch size".into(),
+            }))];
+        }
+
+        let mut txn_results: Vec<Option<RevokeCollectionApprovalResult>> = vec![None; args.len()];
+        let current_time = ic_cdk::api::time();
+
+        for (index, arg) in args.iter_mut().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.from_subaccount,
+            });
+            if let Err(e) = self.mock_revoke_collection_approve(&caller, arg, &current_time) {
+                txn_results.insert(index, Some(Err(e)))
+            }
+        }
+        if let Some(true) = self.icrc7_atomic_batch_transfers {
+            if txn_results
+                .iter()
+                .any(|res| res.is_some() && res.as_ref().unwrap().is_err())
+            {
+                return txn_results;
+            }
+        }
+
+        for (index, arg) in args.iter().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.from_subaccount,
+            });
+            let user_account = UserAccount::new(caller);
+            if let Some(Err(e)) = txn_results.get(index).unwrap() {
+                match e {
+                    &RevokeCollectionApprovalError::GenericBatchError {
+                        error_code: _,
+                        message: _,
+                    } => return txn_results,
+                    _ => continue,
+                }
+            }
+
+            match self.collection_approvals.get(&user_account) {
+                None => (),
+                Some(mut collection_approval) => match arg.spender {
+                    None => {
+                        self.collection_approvals.remove(&user_account);
+                    }
+                    Some(spender) => {
+                        collection_approval.remove_approve(spender);
+                    }
+                },
+            }
+
+            let tid = self.log_transaction(
+                TransactionType::CollectionRevoke {
                     from: caller,
                     to: arg.spender,
                 },

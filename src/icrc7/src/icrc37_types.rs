@@ -173,6 +173,15 @@ impl CollectionApprovalInfo {
     pub fn approve(&mut self, spender: Account, approval: ApprovalInfo) {
         self.0.insert(spender, approval);
     }
+
+    pub fn remove_approve(&mut self, spender: Account) {
+        match self.0.get_mut(&spender) {
+            None => (),
+            Some(_) => {
+                self.0.remove(&spender);
+            }
+        }
+    }
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -237,10 +246,10 @@ pub type RevokeTokenApprovalResult = Result<u128, RevokeTokenApprovalError>;
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct RevokeCollectionApprovalArg {
-    from_subaccount: Option<Subaccount>,
-    spender: Option<Account>,
-    memo: Option<Vec<u8>>,
-    created_at_time: Option<u64>,
+    pub from_subaccount: Option<Subaccount>,
+    pub spender: Option<Account>,
+    pub memo: Option<Vec<u8>>,
+    pub created_at_time: Option<u64>,
 }
 
 pub type RevokeCollectionApprovalResult = Result<u128, RevokeCollectionApprovalError>;
