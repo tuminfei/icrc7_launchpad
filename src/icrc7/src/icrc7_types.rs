@@ -41,6 +41,11 @@ pub enum TransactionType {
         to: Account,
         exp_sec: Option<u64>,
     },
+    Revoke {
+        tid: u128,
+        from: Account,
+        to: Option<Account>,
+    },
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone, Default)]
@@ -259,6 +264,9 @@ impl Transaction {
             ),
             TransactionType::ApproveCollection { from, to, exp_sec } => {
                 Self::approve_collection(at, from.clone(), to.clone(), exp_sec.clone(), memo)
+            }
+            TransactionType::Revoke { tid, from, to } => {
+                Self::revoke(at, tid.clone(), from.clone(), to.clone(), memo)
             }
         };
         return transaction;

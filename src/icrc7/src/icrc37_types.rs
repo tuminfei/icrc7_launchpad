@@ -97,7 +97,7 @@ impl ApprovalInfo {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
-pub struct TokenApprovalInfo(BTreeMap<Account, Vec<ApprovalInfo>>);
+pub struct TokenApprovalInfo(BTreeMap<Account, BTreeMap<Account, ApprovalInfo>>);
 
 impl Storable for TokenApprovalInfo {
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
@@ -114,18 +114,36 @@ impl Storable for TokenApprovalInfo {
 impl TokenApprovalInfo {
     pub fn new(owner: Account, approval: ApprovalInfo) -> Self {
         let mut token_approval = BTreeMap::new();
-        token_approval.insert(owner, vec![approval]);
+        let mut approval_info = BTreeMap::new();
+        approval_info.insert(approval.spender, approval);
+        token_approval.insert(owner, approval_info);
         TokenApprovalInfo(token_approval)
     }
 
     pub fn approve(&mut self, owner: Account, approval: ApprovalInfo) {
         match self.0.get_mut(&owner) {
             None => {
-                self.0.insert(owner, vec![approval]);
+                let mut approval_info = BTreeMap::new();
+                approval_info.insert(approval.spender, approval);
+                self.0.insert(owner, approval_info);
             }
             Some(approvals) => {
-                approvals.push(approval);
+                approvals.insert(approval.spender, approval);
             }
+        }
+    }
+
+    pub fn remove_approve(&mut self, owner: Account, spender: Option<Account>) {
+        match self.0.get_mut(&owner) {
+            None => (),
+            Some(approvals) => match spender {
+                None => {
+                    self.0.remove(&owner);
+                }
+                Some(spender) => {
+                    approvals.remove(&spender);
+                }
+            },
         }
     }
 }
@@ -208,11 +226,11 @@ pub type ApproveCollectionResult = Result<u128, ApproveCollectionError>;
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct RevokeTokenApprovalArg {
-    token_id: u128,
-    from_subaccount: Option<Subaccount>,
-    spender: Option<Account>,
-    memo: Option<Vec<u8>>,
-    created_at_time: Option<u64>,
+    pub token_id: u128,
+    pub from_subaccount: Option<Subaccount>,
+    pub spender: Option<Account>,
+    pub memo: Option<Vec<u8>>,
+    pub created_at_time: Option<u64>,
 }
 
 pub type RevokeTokenApprovalResult = Result<u128, RevokeTokenApprovalError>;

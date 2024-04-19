@@ -3,12 +3,12 @@ use std::{cell::RefCell, collections::HashMap};
 use crate::{
     errors::{
         ApproveCollectionError, ApproveTokenError, BurnError, InsertTransactionError, MintError,
-        TransferError,
+        RevokeTokenApprovalError, TransferError,
     },
     icrc37_types::{
         ApprovalInfo, ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg,
-        ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata, TokenApprovalInfo,
-        UserAccount,
+        ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata, RevokeTokenApprovalArg,
+        RevokeTokenApprovalResult, TokenApprovalInfo, UserAccount,
     },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
@@ -859,6 +859,122 @@ impl State {
             txn_results.insert(index, Some(Ok(tid)))
         }
 
+        return txn_results;
+    }
+
+    fn mock_revoke_approve(
+        &self,
+        caller: &Account,
+        arg: &RevokeTokenApprovalArg,
+    ) -> Result<(), RevokeTokenApprovalError> {
+        if let Some(spender) = arg.spender {
+            if spender == *caller {
+                return Err(RevokeTokenApprovalError::GenericBatchError {
+                    error_code: 1,
+                    message: "Spender cannot be caller".into(),
+                });
+            }
+        }
+
+        if let Some(ref memo) = arg.memo {
+            let max_memo_size = self
+                .icrc7_max_memo_size
+                .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
+            if memo.len() as u32 > max_memo_size {
+                return Err(RevokeTokenApprovalError::GenericBatchError {
+                    error_code: 3,
+                    message: "Exceeds Max Memo Size".into(),
+                });
+            }
+        };
+
+        match self.tokens.get(&arg.token_id) {
+            None => Err(RevokeTokenApprovalError::NonExistingTokenId),
+            Some(ref token) => {
+                if token.token_owner != *caller {
+                    return Err(RevokeTokenApprovalError::Unauthorized);
+                }
+                Ok(())
+            }
+        }
+    }
+
+    pub fn revoke_approve(
+        &mut self,
+        caller: &Principal,
+        mut args: Vec<RevokeTokenApprovalArg>,
+    ) -> Vec<Option<RevokeTokenApprovalResult>> {
+        if args.len() == 0 {
+            return vec![Some(Err(RevokeTokenApprovalError::GenericBatchError {
+                error_code: 1,
+                message: "No Arguments Provided".into(),
+            }))];
+        }
+
+        let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
+
+        if args.len() > max_update_batch_size as usize {
+            return vec![Some(Err(RevokeTokenApprovalError::GenericBatchError {
+                error_code: 2,
+                message: "Exceeds max update batch size".into(),
+            }))];
+        }
+
+        let mut txn_results: Vec<Option<RevokeTokenApprovalResult>> = vec![None; args.len()];
+
+        for (index, arg) in args.iter_mut().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.from_subaccount,
+            });
+            if let Err(e) = self.mock_revoke_approve(&caller, arg) {
+                txn_results.insert(index, Some(Err(e)))
+            }
+        }
+        if let Some(true) = self.icrc7_atomic_batch_transfers {
+            if txn_results
+                .iter()
+                .any(|res| res.is_some() && res.as_ref().unwrap().is_err())
+            {
+                return txn_results;
+            }
+        }
+
+        for (index, arg) in args.iter().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.from_subaccount,
+            });
+            if let Some(Err(e)) = txn_results.get(index).unwrap() {
+                match e {
+                    &RevokeTokenApprovalError::GenericBatchError {
+                        error_code: _,
+                        message: _,
+                    } => return txn_results,
+                    _ => continue,
+                }
+            }
+
+            match self.token_approvals.get(&arg.token_id) {
+                None => {
+                    txn_results.insert(index, Some(Ok(arg.token_id)));
+                }
+                Some(mut token_approval) => {
+                    token_approval.remove_approve(caller, arg.spender);
+                }
+            }
+
+            let tid = self.log_transaction(
+                TransactionType::Revoke {
+                    tid: arg.token_id,
+                    from: caller,
+                    to: arg.spender,
+                },
+                ic_cdk::api::time(),
+                arg.memo.clone(),
+            );
+            txn_results.insert(index, Some(Ok(tid)))
+        }
         return txn_results;
     }
 
