@@ -50,7 +50,7 @@ type BurnError = variant {
   GenericBatchError : record { message : text; error_code : nat };
 };
 type InitApprovalsArg = record {
-  max_approvals : nat16;
+  max_approvals : opt nat16;
   max_approvals_per_token_or_collection : opt nat16;
   settle_to_approvals : opt nat16;
   max_revoke_approvals : opt nat16;
