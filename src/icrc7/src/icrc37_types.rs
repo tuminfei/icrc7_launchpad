@@ -204,7 +204,7 @@ impl Storable for CollectionApprovalAccount {
 
 #[derive(CandidType, Deserialize)]
 pub struct InitApprovalsArg {
-    pub max_approvals: u16,
+    pub max_approvals: Option<u16>,
     pub max_approvals_per_token_or_collection: Option<u16>,
     pub max_revoke_approvals: Option<u16>,
     pub settle_to_approvals: Option<u16>,

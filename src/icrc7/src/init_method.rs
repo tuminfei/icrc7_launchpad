@@ -30,6 +30,9 @@ pub fn init(arg: InitArg) {
         if let Some(max_revoke_approvals) = approval_init.max_revoke_approvals {
             ledger_info.max_revoke_approvals = max_revoke_approvals;
         }
+        if let Some(max_approvals) = approval_init.max_approvals {
+            ledger_info.max_approvals = max_approvals;
+        }
         if let Some(settle_to_approvals) = approval_init.settle_to_approvals {
             ledger_info.settle_to_approvals = settle_to_approvals;
         }
@@ -38,7 +41,6 @@ pub fn init(arg: InitArg) {
         {
             ledger_info.collection_approval_requires_token = collection_approval_requires_token;
         }
-        ledger_info.max_approvals = approval_init.max_approvals;
     }
 
     STATE.with(|s| {
