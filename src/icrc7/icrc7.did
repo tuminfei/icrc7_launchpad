@@ -103,10 +103,11 @@ type Result = variant { Ok : nat; Err : ApproveCollectionError };
 type Result_1 = variant { Ok : nat; Err : ApproveTokenError };
 type Result_2 = variant { Ok : nat; Err : RevokeCollectionApprovalError };
 type Result_3 = variant { Ok : nat; Err : RevokeTokenApprovalError };
-type Result_4 = variant { Ok : nat32; Err : InsertTransactionError };
-type Result_5 = variant { Ok : nat; Err : BurnError };
-type Result_6 = variant { Ok : nat; Err : MintError };
-type Result_7 = variant { Ok : nat; Err : TransferError };
+type Result_4 = variant { Ok : nat; Err : TransferFromError };
+type Result_5 = variant { Ok : nat32; Err : InsertTransactionError };
+type Result_6 = variant { Ok : nat; Err : BurnError };
+type Result_7 = variant { Ok : nat; Err : MintError };
+type Result_8 = variant { Ok : nat; Err : TransferError };
 type RevokeCollectionApprovalArg = record {
   memo : opt blob;
   from_subaccount : opt blob;
@@ -168,6 +169,24 @@ type TransferError = variant {
   GenericBatchError : record { message : text; error_code : nat };
   TooOld;
 };
+type TransferFromArg = record {
+  to : Account;
+  spender_subaccount : opt blob;
+  token_id : nat;
+  from : Account;
+  memo : opt blob;
+  created_at_time : opt nat64;
+};
+type TransferFromError = variant {
+  GenericError : record { message : text; error_code : nat };
+  Duplicate : record { duplicate_of : nat };
+  NonExistingTokenId;
+  Unauthorized;
+  CreatedInFuture : record { ledger_time : nat64 };
+  InvalidRecipient;
+  GenericBatchError : record { message : text; error_code : nat };
+  TooOld;
+};
 type Value = variant {
   Int : int;
   Map : BTreeMap;
@@ -191,11 +210,12 @@ service : (InitArg) -> {
   icrc37_revoke_token_approvals : (vec RevokeTokenApprovalArg) -> (
       vec opt Result_3,
     );
+  icrc37_transfer_from : (vec TransferFromArg) -> (vec opt Result_4);
   icrc7_archive_log_canister : () -> (opt principal) query;
-  icrc7_archive_logs : () -> (Result_4);
+  icrc7_archive_logs : () -> (Result_5);
   icrc7_atomic_batch_transfers : () -> (opt bool) query;
   icrc7_balance_of : (vec Account) -> (vec nat) query;
-  icrc7_burn : (vec BurnArg) -> (vec opt Result_5);
+  icrc7_burn : (vec BurnArg) -> (vec opt Result_6);
   icrc7_default_take_value : () -> (opt nat16) query;
   icrc7_description : () -> (opt text) query;
   icrc7_logo : () -> (opt text) query;
@@ -203,7 +223,7 @@ service : (InitArg) -> {
   icrc7_max_query_batch_size : () -> (opt nat16) query;
   icrc7_max_take_value : () -> (opt nat16) query;
   icrc7_max_update_batch_size : () -> (opt nat16) query;
-  icrc7_mint : (MintArg) -> (Result_6);
+  icrc7_mint : (MintArg) -> (Result_7);
   icrc7_minting_authority : () -> (opt Account) query;
   icrc7_name : () -> (text) query;
   icrc7_owner_of : (vec nat) -> (vec opt Account) query;
@@ -218,7 +238,7 @@ service : (InitArg) -> {
   icrc7_tokens : (opt nat, opt nat) -> (vec nat) query;
   icrc7_tokens_of : (Account, opt nat, opt nat) -> (vec nat) query;
   icrc7_total_supply : () -> (nat) query;
-  icrc7_transfer : (vec TransferArg) -> (vec opt Result_7);
+  icrc7_transfer : (vec TransferArg) -> (vec opt Result_8);
   icrc7_txn_logs : (nat32, nat32) -> (vec Transaction) query;
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);

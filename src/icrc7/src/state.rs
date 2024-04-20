@@ -9,7 +9,8 @@ use crate::{
         ApprovalInfo, ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg,
         ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata,
         RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
-        RevokeTokenApprovalResult, TokenApprovalInfo, UserAccount,
+        RevokeTokenApprovalResult, TokenApprovalInfo, TransferFromArg, TransferFromResult,
+        UserAccount,
     },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
@@ -1098,6 +1099,15 @@ impl State {
             );
             txn_results.insert(index, Some(Ok(tid)))
         }
+        return txn_results;
+    }
+
+    pub fn transfer_from(
+        &mut self,
+        caller: &Principal,
+        mut args: Vec<TransferFromArg>,
+    ) -> Vec<Option<TransferFromResult>> {
+        let mut txn_results: Vec<Option<TransferFromResult>> = vec![None; args.len()];
         return txn_results;
     }
 

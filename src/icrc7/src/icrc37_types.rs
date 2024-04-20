@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::{
     ApproveCollectionError, ApproveTokenError, RevokeCollectionApprovalError,
-    RevokeTokenApprovalError,
+    RevokeTokenApprovalError, TransferFromError,
 };
 
 pub type Metadata = Map;
@@ -259,3 +259,15 @@ pub struct IsApprovedArg {
     from_subaccount: Option<Subaccount>,
     token_id: u128,
 }
+
+#[derive(CandidType, Deserialize, Clone, Debug)]
+pub struct TransferFromArg {
+    pub spender_subaccount: Option<Subaccount>,
+    pub from: Account,
+    pub to: Account,
+    pub token_id: u128,
+    pub memo: Option<Vec<u8>>,
+    pub created_at_time: Option<u64>,
+}
+
+pub type TransferFromResult = Result<u128, TransferFromError>;

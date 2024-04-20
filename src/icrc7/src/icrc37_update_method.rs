@@ -5,7 +5,7 @@ use crate::{
     icrc37_types::{
         ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg, ApproveTokenResult,
         RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
-        RevokeTokenApprovalResult,
+        RevokeTokenApprovalResult, TransferFromArg, TransferFromResult,
     },
     state::STATE,
 };
@@ -43,4 +43,13 @@ pub fn icrc37_revoke_collection_approvals(
     let caller = ic_cdk::caller();
 
     STATE.with(|s| s.borrow_mut().revoke_collection_approve(&caller, args))
+}
+
+// Transfers one or more tokens from the from account to the to account.
+// The transfer can be initiated by the holder of the tokens.
+#[ic_cdk::update(guard = "authenticated_guard")]
+pub fn icrc37_transfer_from(args: Vec<TransferFromArg>) -> Vec<Option<TransferFromResult>> {
+    let caller = ic_cdk::caller();
+
+    STATE.with(|s| s.borrow_mut().transfer_from(&caller, args))
 }
