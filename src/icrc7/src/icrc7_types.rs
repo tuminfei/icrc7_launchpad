@@ -8,7 +8,7 @@ use icrc_ledger_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::errors::{BurnError, InsertTransactionError, MintError, TransferError};
+use crate::{errors::{BurnError, InsertTransactionError, MintError, TransferError}, icrc37_types::InitApprovalsArg};
 
 pub static TRANSACTION_TRANSFER_OP: &str = "7xfer";
 
@@ -345,6 +345,7 @@ pub struct InitArg {
     pub icrc7_atomic_batch_transfers: Option<bool>,
     pub tx_window: Option<u64>,
     pub permitted_drift: Option<u64>,
+    pub approval_init: Option<InitApprovalsArg>,
 }
 
 #[derive(CandidType)]

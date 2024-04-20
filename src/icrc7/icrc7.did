@@ -49,6 +49,13 @@ type BurnError = variant {
   Unauthorized;
   GenericBatchError : record { message : text; error_code : nat };
 };
+type InitApprovalsArg = record {
+  max_approvals : nat16;
+  max_approvals_per_token_or_collection : opt nat16;
+  settle_to_approvals : opt nat16;
+  max_revoke_approvals : opt nat16;
+  collection_approval_requires_token : opt bool;
+};
 type InitArg = record {
   icrc7_supply_cap : opt nat;
   icrc7_description : opt text;
@@ -61,6 +68,7 @@ type InitArg = record {
   icrc7_symbol : text;
   icrc7_max_update_batch_size : opt nat16;
   icrc7_atomic_batch_transfers : opt bool;
+  approval_init : opt InitApprovalsArg;
   icrc7_default_take_value : opt nat16;
   icrc7_logo : opt text;
   icrc7_name : text;

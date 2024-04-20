@@ -2,7 +2,9 @@ use ic_cdk_macros::{init, post_upgrade, pre_upgrade};
 use ic_stable_structures::{writer::Writer, Memory};
 use icrc_ledger_types::icrc1::account::Account;
 
-use crate::{icrc7_types::InitArg, state::STATE, utils::account_transformer};
+use crate::{
+    icrc37_types::LedgerInfo, icrc7_types::InitArg, state::STATE, utils::account_transformer,
+};
 
 #[init]
 pub fn init(arg: InitArg) {
@@ -16,6 +18,29 @@ pub fn init(arg: InitArg) {
         }
         Some(acc) => account_transformer(acc),
     });
+
+    let mut ledger_info = LedgerInfo::default();
+    if let Some(approval_init) = arg.approval_init {
+        if let Some(max_approvals_per_token_or_collection) =
+            approval_init.max_approvals_per_token_or_collection
+        {
+            ledger_info.max_approvals_per_token_or_collection =
+                max_approvals_per_token_or_collection;
+        }
+        if let Some(max_revoke_approvals) = approval_init.max_revoke_approvals {
+            ledger_info.max_revoke_approvals = max_revoke_approvals;
+        }
+        if let Some(settle_to_approvals) = approval_init.settle_to_approvals {
+            ledger_info.settle_to_approvals = settle_to_approvals;
+        }
+        if let Some(collection_approval_requires_token) =
+            approval_init.collection_approval_requires_token
+        {
+            ledger_info.collection_approval_requires_token = collection_approval_requires_token;
+        }
+        ledger_info.max_approvals = approval_init.max_approvals;
+    }
+
     STATE.with(|s| {
         let mut s = s.borrow_mut();
         s.minting_authority = Some(minting_authority);
@@ -32,6 +57,7 @@ pub fn init(arg: InitArg) {
         s.icrc7_atomic_batch_transfers = arg.icrc7_atomic_batch_transfers;
         s.tx_window = arg.tx_window;
         s.permitted_drift = arg.permitted_drift;
+        s.approval_ledger_info = ledger_info;
     })
 }
 
