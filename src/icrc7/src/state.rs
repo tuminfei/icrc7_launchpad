@@ -3,14 +3,13 @@ use std::{cell::RefCell, collections::HashMap};
 use crate::{
     errors::{
         ApproveCollectionError, ApproveTokenError, BurnError, InsertTransactionError, MintError,
-        RevokeCollectionApprovalError, RevokeTokenApprovalError, TransferError,
+        RevokeCollectionApprovalError, RevokeTokenApprovalError, TransferError, TransferFromError,
     },
     icrc37_types::{
-        ApprovalInfo, ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg,
-        ApproveTokenResult, CollectionApprovalInfo, LedgerInfo, Metadata,
-        RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
-        RevokeTokenApprovalResult, TokenApprovalInfo, TransferFromArg, TransferFromResult,
-        UserAccount,
+        ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg, ApproveTokenResult,
+        CollectionApprovalInfo, LedgerInfo, Metadata, RevokeCollectionApprovalArg,
+        RevokeCollectionApprovalResult, RevokeTokenApprovalArg, RevokeTokenApprovalResult,
+        TokenApprovalInfo, TransferFromArg, TransferFromResult, UserAccount,
     },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
@@ -21,7 +20,7 @@ use crate::{
         get_token_map_memory, Memory,
     },
     utils::{account_transformer, burn_account},
-    BurnArg, SyncReceipt, TRANSACTION_TRANSFER_OP,
+    BurnArg, SyncReceipt, TRANSACTION_TRANSFER_FROM_OP, TRANSACTION_TRANSFER_OP,
 };
 use candid::{CandidType, Decode, Encode, Principal};
 use ic_stable_structures::{
@@ -40,7 +39,6 @@ pub struct Icrc7Token {
     pub token_description: Option<String>,
     pub token_logo: Option<String>,
     pub token_owner: Account,
-    pub approvals: Vec<ApprovalInfo>,
 }
 
 impl Storable for Icrc7Token {
@@ -69,26 +67,11 @@ impl Icrc7Token {
             token_logo,
             token_owner,
             token_description,
-            approvals: vec![],
         }
     }
 
     fn transfer(&mut self, to: Account) {
         self.token_owner = to;
-        self.approvals.clear();
-    }
-
-    fn approval_check(&self, current_time: u64, account: &Account) -> bool {
-        for approval in self.approvals.iter() {
-            if approval.spender == *account {
-                if approval.expires_at.is_none() {
-                    return true;
-                } else if approval.expires_at >= Some(current_time) {
-                    return true;
-                }
-            }
-        }
-        false
     }
 
     fn token_metadata(&self) -> Icrc7TokenMetadata {
@@ -302,7 +285,9 @@ impl State {
             if txn.ts < *allowed_past_time {
                 return Ok(());
             }
-            if txn.op == String::from(TRANSACTION_TRANSFER_OP) {
+            if txn.op == String::from(TRANSACTION_TRANSFER_OP)
+                || txn.op == String::from(TRANSACTION_TRANSFER_FROM_OP)
+            {
                 if args.token_id == txn.tid
                     && caller == txn.from.as_ref().unwrap()
                     && args.to == txn.to.unwrap()
@@ -343,6 +328,51 @@ impl State {
 
     fn get_current_txn_count(&self) -> u128 {
         self.txn_count - self.archive_txn_count
+    }
+
+    fn is_approved_by_collection(&self, from: &Account, spender: &Account, now_sec: u64) -> bool {
+        let from_user = UserAccount::new(*from);
+        if let Some(approvals) = self.collection_approvals.get(&from_user) {
+            if let Some(approval_info) = approvals.into_map().get(spender) {
+                match approval_info.expires_at {
+                    None => {
+                        return true;
+                    }
+                    Some(expires_at) => {
+                        return expires_at > now_sec;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    fn is_approved_by_token(
+        &self,
+        token_id: &u128,
+        from: &Account,
+        spender: &Account,
+        now_sec: u64,
+    ) -> bool {
+        if let Some(token) = self.token_approvals.get(token_id) {
+            if let Some(token_approvals) = token.into_map().get(from) {
+                if let Some(approval_info) = token_approvals.get(spender) {
+                    match approval_info.expires_at {
+                        None => {
+                            return true;
+                        }
+                        Some(expires_at) => {
+                            return expires_at > now_sec;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    fn token_approvals_clean(&mut self, token_id: &u128) {
+        self.token_approvals.remove(token_id);
     }
 
     fn mock_transfer(
@@ -391,7 +421,7 @@ impl State {
         }
         let token = self.tokens.get(&arg.token_id).unwrap();
         // checking if the caller is authorized or is approve to make transaction
-        if token.token_owner != *caller && !token.approval_check(current_time.clone(), caller) {
+        if token.token_owner != *caller {
             return Err(TransferError::Unauthorized);
         }
         Ok(())
@@ -463,7 +493,6 @@ impl State {
             }
             let mut token = self.tokens.get(&arg.token_id).unwrap();
             token.transfer(arg.to.clone());
-            token.approvals.clear();
             self.tokens.insert(arg.token_id, token);
             let txn_id = self.log_transaction(
                 TransactionType::Transfer {
@@ -1102,12 +1131,143 @@ impl State {
         return txn_results;
     }
 
+    fn mock_transfer_from(
+        &self,
+        caller: &Account,
+        arg: &TransferFromArg,
+        current_time: &u64,
+    ) -> Result<(), TransferFromError> {
+        if arg.to == *caller {
+            return Err(TransferFromError::GenericBatchError {
+                error_code: 1,
+                message: "Spender cannot be caller".into(),
+            });
+        }
+
+        if let Some(time) = arg.created_at_time {
+            let allowed_past_time = *current_time
+                - self.tx_window.unwrap_or(State::DEFAULT_TX_WINDOW)
+                - self
+                    .permitted_drift
+                    .unwrap_or(State::DEFAULT_PERMITTED_DRIFT);
+            let allowed_future_time = *current_time
+                + self
+                    .permitted_drift
+                    .unwrap_or(State::DEFAULT_PERMITTED_DRIFT);
+            if time < allowed_past_time {
+                return Err(TransferFromError::TooOld);
+            } else if time > allowed_future_time {
+                return Err(TransferFromError::CreatedInFuture {
+                    ledger_time: current_time.clone(),
+                });
+            }
+
+            if !self.is_approved_by_collection(&arg.from, &caller, *current_time)
+                && !self.is_approved_by_token(&arg.token_id, &arg.from, &caller, *current_time)
+            {
+                return Err(TransferFromError::Unauthorized);
+            }
+
+            let transfer_arg: TransferArg = arg.clone().into();
+            let result = self.txn_deduplication_check(&allowed_past_time, caller, &transfer_arg);
+            match result {
+                Ok(_) => (),
+                Err(_) => {
+                    return Err(TransferFromError::Duplicate {
+                        duplicate_of: (arg.token_id),
+                    });
+                }
+            }
+        }
+
+        if let Some(ref memo) = arg.memo {
+            let max_memo_size = self
+                .icrc7_max_memo_size
+                .unwrap_or(State::DEFAULT_MAX_MEMO_SIZE);
+            if memo.len() as u32 > max_memo_size {
+                return Err(TransferFromError::GenericBatchError {
+                    error_code: 3,
+                    message: "Exceeds Max Memo Size".into(),
+                });
+            }
+        };
+        Ok(())
+    }
+
     pub fn transfer_from(
         &mut self,
         caller: &Principal,
         mut args: Vec<TransferFromArg>,
     ) -> Vec<Option<TransferFromResult>> {
+        if args.len() == 0 {
+            return vec![Some(Err(TransferFromError::GenericError {
+                error_code: 1,
+                message: "No Arguments Provided".into(),
+            }))];
+        }
+
+        let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
+
+        if args.len() > max_update_batch_size as usize {
+            return vec![Some(Err(TransferFromError::GenericError {
+                error_code: 2,
+                message: "Exceeds max update batch size".into(),
+            }))];
+        }
+
         let mut txn_results: Vec<Option<TransferFromResult>> = vec![None; args.len()];
+        let current_time = ic_cdk::api::time();
+
+        for (index, arg) in args.iter_mut().enumerate() {
+            let caller = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.spender_subaccount,
+            });
+            if let Err(e) = self.mock_transfer_from(&caller, arg, &current_time) {
+                txn_results.insert(index, Some(Err(e)))
+            }
+        }
+        if let Some(true) = self.icrc7_atomic_batch_transfers {
+            if txn_results
+                .iter()
+                .any(|res| res.is_some() && res.as_ref().unwrap().is_err())
+            {
+                return txn_results;
+            }
+        }
+
+        for (index, arg) in args.iter().enumerate() {
+            let caller_account = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.spender_subaccount,
+            });
+            let time = arg.created_at_time.unwrap_or(current_time);
+            if let Some(Err(e)) = txn_results.get(index).unwrap() {
+                match e {
+                    TransferFromError::GenericBatchError {
+                        error_code: _,
+                        message: _,
+                    } => return txn_results,
+                    _ => continue,
+                }
+            }
+            let mut token = self.tokens.get(&arg.token_id).unwrap();
+            token.transfer(arg.to.clone());
+            self.token_approvals_clean(&arg.token_id);
+            self.tokens.insert(arg.token_id, token);
+            let txn_id = self.log_transaction(
+                TransactionType::TransferFrom {
+                    tid: arg.token_id,
+                    from: arg.from.clone(),
+                    to: arg.to.clone(),
+                    spender: caller_account.clone(),
+                },
+                time,
+                arg.memo.clone(),
+            );
+            txn_results[index] = Some(Ok(txn_id));
+        }
+
         return txn_results;
     }
 

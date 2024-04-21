@@ -8,9 +8,12 @@ use icrc_ledger_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::errors::{
-    ApproveCollectionError, ApproveTokenError, RevokeCollectionApprovalError,
-    RevokeTokenApprovalError, TransferFromError,
+use crate::{
+    errors::{
+        ApproveCollectionError, ApproveTokenError, RevokeCollectionApprovalError,
+        RevokeTokenApprovalError, TransferFromError,
+    },
+    TransferArg,
 };
 
 pub type Metadata = Map;
@@ -33,6 +36,12 @@ impl Storable for UserAccount {
 impl UserAccount {
     pub fn new(user: Account) -> Self {
         UserAccount(user)
+    }
+}
+
+impl From<UserAccount> for Account {
+    fn from(user_account: UserAccount) -> Self {
+        user_account.0
     }
 }
 
@@ -112,6 +121,10 @@ impl Storable for TokenApprovalInfo {
 }
 
 impl TokenApprovalInfo {
+    pub fn into_map(self) -> BTreeMap<Account, BTreeMap<Account, ApprovalInfo>> {
+        self.0
+    }
+
     pub fn new(owner: Account, approval: ApprovalInfo) -> Self {
         let mut token_approval = BTreeMap::new();
         let mut approval_info = BTreeMap::new();
@@ -168,6 +181,10 @@ impl CollectionApprovalInfo {
         let mut collection_approval = BTreeMap::new();
         collection_approval.insert(spender, approval);
         CollectionApprovalInfo(collection_approval)
+    }
+
+    pub fn into_map(self) -> BTreeMap<Account, ApprovalInfo> {
+        self.0
     }
 
     pub fn approve(&mut self, spender: Account, approval: ApprovalInfo) {
@@ -268,6 +285,18 @@ pub struct TransferFromArg {
     pub token_id: u128,
     pub memo: Option<Vec<u8>>,
     pub created_at_time: Option<u64>,
+}
+
+impl Into<TransferArg> for TransferFromArg {
+    fn into(self) -> TransferArg {
+        TransferArg {
+            from_subaccount: self.spender_subaccount,
+            to: self.to,
+            token_id: self.token_id,
+            memo: self.memo,
+            created_at_time: self.created_at_time,
+        }
+    }
 }
 
 pub type TransferFromResult = Result<u128, TransferFromError>;

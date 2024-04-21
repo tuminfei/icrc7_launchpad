@@ -8,9 +8,13 @@ use icrc_ledger_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::{BurnError, InsertTransactionError, MintError, TransferError}, icrc37_types::InitApprovalsArg};
+use crate::{
+    errors::{BurnError, InsertTransactionError, MintError, TransferError},
+    icrc37_types::InitApprovalsArg,
+};
 
 pub static TRANSACTION_TRANSFER_OP: &str = "7xfer";
+pub static TRANSACTION_TRANSFER_FROM_OP: &str = "37xfer";
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub enum TransactionType {
@@ -29,6 +33,12 @@ pub enum TransactionType {
         tid: u128,
         from: Account,
         to: Account,
+    },
+    TransferFrom {
+        tid: u128,
+        from: Account,
+        to: Account,
+        spender: Account,
     },
     Approval {
         tid: u128,
@@ -275,6 +285,19 @@ impl Transaction {
             TransactionType::RevokeCollection { from, to } => {
                 Self::revoke_collection(at, from.clone(), to.clone(), memo)
             }
+            TransactionType::TransferFrom {
+                tid,
+                from,
+                to,
+                spender,
+            } => Self::transfer_from(
+                at,
+                tid.clone(),
+                from.clone(),
+                to.clone(),
+                spender.clone(),
+                memo,
+            ),
         };
         return transaction;
     }
