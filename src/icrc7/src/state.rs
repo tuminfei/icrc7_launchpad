@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::BTreeMap};
 
 use crate::{
     errors::{
@@ -27,10 +27,7 @@ use candid::{CandidType, Decode, Encode, Principal};
 use ic_stable_structures::{
     memory_manager::MemoryManager, storable::Bound, DefaultMemoryImpl, StableBTreeMap, Storable,
 };
-use icrc_ledger_types::{
-    icrc::{generic_metadata_value::MetadataValue, generic_value::Value},
-    icrc1::account::Account,
-};
+use icrc_ledger_types::{icrc::generic_value::Value, icrc1::account::Account};
 use serde::{Deserialize, Serialize};
 
 #[derive(CandidType, Serialize, Deserialize, Clone)]
@@ -76,20 +73,14 @@ impl Icrc7Token {
     }
 
     fn token_metadata(&self) -> Icrc7TokenMetadata {
-        let mut metadata = HashMap::<String, MetadataValue>::new();
-        metadata.insert("Name".into(), MetadataValue::Text(self.token_name.clone()));
-        metadata.insert(
-            "Symbol".into(),
-            MetadataValue::Text(self.token_name.clone()),
-        );
+        let mut metadata = BTreeMap::<String, Value>::new();
+        metadata.insert("Name".into(), Value::Text(self.token_name.clone()));
+        metadata.insert("Symbol".into(), Value::Text(self.token_name.clone()));
         if let Some(ref description) = self.token_description {
-            metadata.insert(
-                "Description".into(),
-                MetadataValue::Text(description.clone()),
-            );
+            metadata.insert("Description".into(), Value::Text(description.clone()));
         }
         if let Some(ref logo) = self.token_logo {
-            metadata.insert("logo".into(), MetadataValue::Text(logo.clone()));
+            metadata.insert("logo".into(), Value::Text(logo.clone()));
         }
         metadata
     }

@@ -1,6 +1,7 @@
 use crate::cycles::WalletReceiveResult;
 use crate::icrc37_types::*;
 use crate::icrc7_types::*;
+use crate::icrc3_types::*;
 use candid::export_service;
 use candid::{Nat, Principal};
 use ic_cdk_macros::query;

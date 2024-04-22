@@ -38,6 +38,7 @@ type BTreeMap = vec record {
     Array : vec Value;
   };
 };
+type BlockType = record { url : text; block_type : text };
 type BurnArg = record {
   token_id : nat;
   memo : opt blob;
@@ -86,7 +87,6 @@ type IsApprovedArg = record {
   from_subaccount : opt blob;
   spender : Account;
 };
-type MetadataValue = variant { Int : int; Nat : nat; Blob : blob; Text : text };
 type MintArg = record {
   to : Account;
   token_id : nat;
@@ -155,7 +155,7 @@ type Transaction = record {
   tid : nat;
   from : opt Account;
   memo : opt blob;
-  meta : opt vec record { text; MetadataValue };
+  meta : opt vec record { text; Value };
   spender : opt Account;
 };
 type TransferArg = record {
@@ -224,6 +224,7 @@ service : (InitArg) -> {
       vec opt Result_3,
     );
   icrc37_transfer_from : (vec TransferFromArg) -> (vec opt Result_4);
+  icrc3_supported_block_types : () -> (vec BlockType) query;
   icrc7_archive_log_canister : () -> (opt principal) query;
   icrc7_archive_logs : () -> (Result_5);
   icrc7_atomic_batch_transfers : () -> (opt bool) query;
@@ -246,7 +247,7 @@ service : (InitArg) -> {
   icrc7_supported_standards : () -> (vec Standard) query;
   icrc7_symbol : () -> (text) query;
   icrc7_token_metadata : (vec nat) -> (
-      vec opt vec record { text; MetadataValue },
+      vec opt vec record { text; Value },
     ) query;
   icrc7_tokens : (opt nat, opt nat) -> (vec nat) query;
   icrc7_tokens_of : (Account, opt nat, opt nat) -> (vec nat) query;

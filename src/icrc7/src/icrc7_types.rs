@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use candid::{CandidType, Decode, Encode};
 use ic_stable_structures::{storable::Bound, Storable};
 use icrc_ledger_types::{
-    icrc::generic_metadata_value::MetadataValue,
+    icrc::generic_value::Value,
     icrc1::account::{Account, Subaccount},
 };
 use serde::{Deserialize, Serialize};
@@ -326,7 +326,7 @@ pub struct TransferArg {
 
 pub type TransferResult = Result<u128, TransferError>;
 
-pub type Icrc7TokenMetadata = HashMap<String, MetadataValue>;
+pub type Icrc7TokenMetadata = BTreeMap<String, Value>;
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct MintArg {
