@@ -7,9 +7,10 @@ use crate::{
     },
     icrc37_types::{
         ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg, ApproveTokenResult,
-        CollectionApprovalInfo, LedgerInfo, Metadata, RevokeCollectionApprovalArg,
-        RevokeCollectionApprovalResult, RevokeTokenApprovalArg, RevokeTokenApprovalResult,
-        TokenApprovalInfo, TransferFromArg, TransferFromResult, UserAccount,
+        CollectionApproval, CollectionApprovalInfo, LedgerInfo, Metadata,
+        RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
+        RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
+        TransferFromResult, UserAccount,
     },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
@@ -109,8 +110,8 @@ pub struct State {
     pub icrc7_supply_cap: Option<u128>,
     pub icrc7_max_query_batch_size: Option<u16>,
     pub icrc7_max_update_batch_size: Option<u16>,
-    pub icrc7_max_take_value: Option<u16>,
-    pub icrc7_default_take_value: Option<u16>,
+    pub icrc7_max_take_value: Option<u128>,
+    pub icrc7_default_take_value: Option<u128>,
     pub icrc7_max_memo_size: Option<u32>,
     pub icrc7_atomic_batch_transfers: Option<bool>,
     pub tx_window: Option<u64>,
@@ -208,11 +209,11 @@ impl State {
         self.icrc7_max_update_batch_size
     }
 
-    pub fn icrc7_default_take_value(&self) -> Option<u16> {
+    pub fn icrc7_default_take_value(&self) -> Option<u128> {
         self.icrc7_default_take_value
     }
 
-    pub fn icrc7_max_take_value(&self) -> Option<u16> {
+    pub fn icrc7_max_take_value(&self) -> Option<u128> {
         self.icrc7_max_take_value
     }
 
@@ -328,6 +329,13 @@ impl State {
 
     fn get_current_txn_count(&self) -> u128 {
         self.txn_count - self.archive_txn_count
+    }
+
+    fn get_current_take(&self, take: Option<u128>) -> u128 {
+        self.icrc7_max_take_value
+            .map_or(self::State::DEFAULT_TAKE_VALUE, |max_take| {
+                take.map_or(max_take, |t| t.min(max_take))
+            })
     }
 
     fn is_approved_by_collection(&self, from: &Account, spender: &Account, now_sec: u64) -> bool {
@@ -1269,6 +1277,52 @@ impl State {
         }
 
         return txn_results;
+    }
+
+    pub fn icrc37_get_token_approvals(
+        &self,
+        token_id: u128,
+        prev: Option<TokenApproval>,
+        take: Option<u128>,
+    ) -> Vec<TokenApproval> {
+        let take = self.get_current_take(take);
+        let mut results: Vec<TokenApproval> = vec![];
+        let token = match self.tokens.get(&token_id) {
+            Some(token) => token,
+            None => return results,
+        };
+
+        if let Some(token_approvals) = self.token_approvals.get(&token_id) {
+            if let Some(token_approvals) = token_approvals.into_map().get(&token.token_owner) {
+                for (key, approval) in token_approvals.iter() {
+                    if let Some(prev) = prev.clone() {
+                        if key <= &prev.approval_info.spender {
+                            continue;
+                        }
+                        results.push(TokenApproval {
+                            token_id: token_id.clone(),
+                            approval_info: approval.clone(),
+                        });
+
+                        if results.len() as u128 >= take {
+                            return results;
+                        }
+                    }
+                }
+            }
+        }
+
+        return results;
+    }
+
+    pub fn icrc37_get_collection_approvals(
+        &self,
+        owner: Account,
+        prev: Option<CollectionApproval>,
+        take: Option<u128>,
+    ) -> Vec<CollectionApproval> {
+        let mut results: Vec<CollectionApproval> = vec![];
+        return results;
     }
 
     pub fn icrc7_token_metadata(&self, token_ids: &[u128]) -> Vec<Option<Icrc7TokenMetadata>> {

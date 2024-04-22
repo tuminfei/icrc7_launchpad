@@ -1,7 +1,11 @@
 use candid::Nat;
 use ic_cdk_macros::query;
+use icrc_ledger_types::icrc1::account::Account;
 
-use crate::{icrc37_types::Metadata, state::STATE};
+use crate::{
+    icrc37_types::{CollectionApproval, Metadata, TokenApproval},
+    state::STATE,
+};
 
 // Returns the approval-related metadata of the ledger implementation.
 #[query]
@@ -28,5 +32,28 @@ pub fn icrc37_max_revoke_approvals() -> Option<Nat> {
         Some(Nat::from(
             s.borrow().approval_ledger_info.max_revoke_approvals,
         ))
+    })
+}
+
+// Returns the token-level approvals that exist for the given `token_id`.
+#[query]
+pub fn icrc37_get_token_approvals(
+    token_id: u128,
+    prev: Option<TokenApproval>,
+    take: Option<u128>,
+) -> Vec<TokenApproval> {
+    STATE.with(|s| s.borrow().icrc37_get_token_approvals(token_id, prev, take))
+}
+
+// Returns the collection-level approvals that exist for the specified `owner`.
+#[ic_cdk::query]
+pub fn icrc37_get_collection_approvals(
+    owner: Account,
+    prev: Option<CollectionApproval>,
+    take: Option<u128>,
+) -> Vec<CollectionApproval> {
+    STATE.with(|s| {
+        s.borrow()
+            .icrc37_get_collection_approvals(owner, prev, take)
     })
 }

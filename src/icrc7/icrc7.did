@@ -63,13 +63,13 @@ type InitArg = record {
   minting_account : opt Account;
   icrc7_max_query_batch_size : opt nat16;
   permitted_drift : opt nat64;
-  icrc7_max_take_value : opt nat16;
+  icrc7_max_take_value : opt nat;
   icrc7_max_memo_size : opt nat32;
   icrc7_symbol : text;
   icrc7_max_update_batch_size : opt nat16;
   icrc7_atomic_batch_transfers : opt bool;
   approval_init : opt InitApprovalsArg;
-  icrc7_default_take_value : opt nat16;
+  icrc7_default_take_value : opt nat;
   icrc7_logo : opt text;
   icrc7_name : text;
 };
@@ -141,6 +141,7 @@ type RevokeTokenApprovalError = variant {
   TooOld;
 };
 type Standard = record { url : text; name : text };
+type TokenApproval = record { token_id : nat; approval_info : ApprovalInfo };
 type Transaction = record {
   op : text;
   to : opt Account;
@@ -201,6 +202,12 @@ service : (InitArg) -> {
   __get_candid_interface_tmp_hack : () -> (text) query;
   icrc37_approve_collection : (vec ApproveCollectionArg) -> (vec opt Result);
   icrc37_approve_tokens : (vec ApproveTokenArg) -> (vec opt Result_1);
+  icrc37_get_collection_approvals : (Account, opt ApprovalInfo, opt nat) -> (
+      vec ApprovalInfo,
+    ) query;
+  icrc37_get_token_approvals : (nat, opt TokenApproval, opt nat) -> (
+      vec TokenApproval,
+    ) query;
   icrc37_max_approvals_per_token_or_collection : () -> (opt nat) query;
   icrc37_max_revoke_approvals : () -> (opt nat) query;
   icrc37_metadata : () -> (vec record { text; Value }) query;
@@ -216,12 +223,12 @@ service : (InitArg) -> {
   icrc7_atomic_batch_transfers : () -> (opt bool) query;
   icrc7_balance_of : (vec Account) -> (vec nat) query;
   icrc7_burn : (vec BurnArg) -> (vec opt Result_6);
-  icrc7_default_take_value : () -> (opt nat16) query;
+  icrc7_default_take_value : () -> (opt nat) query;
   icrc7_description : () -> (opt text) query;
   icrc7_logo : () -> (opt text) query;
   icrc7_max_memo_size : () -> (opt nat32) query;
   icrc7_max_query_batch_size : () -> (opt nat16) query;
-  icrc7_max_take_value : () -> (opt nat16) query;
+  icrc7_max_take_value : () -> (opt nat) query;
   icrc7_max_update_batch_size : () -> (opt nat16) query;
   icrc7_mint : (MintArg) -> (Result_7);
   icrc7_minting_authority : () -> (opt Account) query;

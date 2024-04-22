@@ -236,9 +236,11 @@ pub struct ApproveTokenArg {
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct TokenApproval {
-    token_id: u128,
-    approval_info: ApprovalInfo,
+    pub token_id: u128,
+    pub approval_info: ApprovalInfo,
 }
+
+pub type CollectionApproval = ApprovalInfo;
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct ApproveCollectionArg {

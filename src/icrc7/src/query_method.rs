@@ -50,12 +50,12 @@ pub fn icrc7_max_update_batch_size() -> Option<u16> {
 }
 
 #[query]
-pub fn icrc7_default_take_value() -> Option<u16> {
+pub fn icrc7_default_take_value() -> Option<u128> {
     STATE.with(|s| s.borrow().icrc7_default_take_value())
 }
 
 #[query]
-pub fn icrc7_max_take_value() -> Option<u16> {
+pub fn icrc7_max_take_value() -> Option<u128> {
     STATE.with(|s| s.borrow().icrc7_max_take_value())
 }
 
