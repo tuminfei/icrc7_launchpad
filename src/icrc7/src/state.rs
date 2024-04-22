@@ -1321,7 +1321,27 @@ impl State {
         prev: Option<CollectionApproval>,
         take: Option<u128>,
     ) -> Vec<CollectionApproval> {
+        let take = self.get_current_take(take);
+        let user_owner = UserAccount::new(owner);
         let mut results: Vec<CollectionApproval> = vec![];
+        match self.collection_approvals.get(&user_owner) {
+            Some(owner_approval) => {
+                for (key, approval) in owner_approval.into_map().iter() {
+                    if let Some(prev) = prev.clone() {
+                        if key <= &prev.spender {
+                            continue;
+                        }
+                        results.push(approval.clone());
+
+                        if results.len() as u128 >= take {
+                            return results;
+                        }
+                    }
+                }
+            }
+            None => return results,
+        };
+
         return results;
     }
 
