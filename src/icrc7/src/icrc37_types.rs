@@ -274,9 +274,9 @@ pub type RevokeCollectionApprovalResult = Result<u128, RevokeCollectionApprovalE
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct IsApprovedArg {
-    spender: Account,
-    from_subaccount: Option<Subaccount>,
-    token_id: u128,
+    pub spender: Account,
+    pub from_subaccount: Option<Subaccount>,
+    pub token_id: u128,
 }
 
 #[derive(CandidType, Deserialize, Clone, Debug)]

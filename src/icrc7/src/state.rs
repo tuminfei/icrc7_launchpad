@@ -7,7 +7,7 @@ use crate::{
     },
     icrc37_types::{
         ApproveCollectionArg, ApproveCollectionResult, ApproveTokenArg, ApproveTokenResult,
-        CollectionApproval, CollectionApprovalInfo, LedgerInfo, Metadata,
+        CollectionApproval, CollectionApprovalInfo, IsApprovedArg, LedgerInfo, Metadata,
         RevokeCollectionApprovalArg, RevokeCollectionApprovalResult, RevokeTokenApprovalArg,
         RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
         TransferFromResult, UserAccount,
@@ -1343,6 +1343,41 @@ impl State {
         };
 
         return results;
+    }
+
+    pub fn icrc37_is_approved(&self, args: Vec<IsApprovedArg>) -> Vec<bool> {
+        if args.is_empty() {
+            return vec![];
+        }
+
+        let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
+        if args.len() > max_update_batch_size as usize {
+            return vec![];
+        }
+
+        let caller = ic_cdk::caller();
+        let current_time = ic_cdk::api::time();
+        let mut result: Vec<bool> = vec![];
+        for arg in args.iter() {
+            let caller_account = account_transformer(Account {
+                owner: caller.clone(),
+                subaccount: arg.from_subaccount,
+            });
+            let is_approved_by_collection =
+                self.is_approved_by_collection(&caller_account, &arg.spender, current_time);
+            let is_approved_by_token = self.is_approved_by_token(
+                &arg.token_id,
+                &caller_account,
+                &arg.spender,
+                current_time,
+            );
+            if is_approved_by_collection || is_approved_by_token {
+                result.push(true)
+            } else {
+                result.push(false)
+            }
+        }
+        return result;
     }
 
     pub fn icrc7_token_metadata(&self, token_ids: &[u128]) -> Vec<Option<Icrc7TokenMetadata>> {

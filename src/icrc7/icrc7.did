@@ -81,6 +81,11 @@ type InsertTransactionError = variant {
   CantWrite;
   Unexpected : text;
 };
+type IsApprovedArg = record {
+  token_id : nat;
+  from_subaccount : opt blob;
+  spender : Account;
+};
 type MetadataValue = variant { Int : int; Nat : nat; Blob : blob; Text : text };
 type MintArg = record {
   to : Account;
@@ -208,6 +213,7 @@ service : (InitArg) -> {
   icrc37_get_token_approvals : (nat, opt TokenApproval, opt nat) -> (
       vec TokenApproval,
     ) query;
+  icrc37_is_approved : (vec IsApprovedArg) -> (vec bool) query;
   icrc37_max_approvals_per_token_or_collection : () -> (opt nat) query;
   icrc37_max_revoke_approvals : () -> (opt nat) query;
   icrc37_metadata : () -> (vec record { text; Value }) query;
