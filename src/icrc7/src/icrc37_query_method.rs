@@ -1,4 +1,4 @@
-use candid::{Nat, Principal};
+use candid::Nat;
 use ic_cdk_macros::query;
 use icrc_ledger_types::icrc1::account::Account;
 
@@ -38,10 +38,6 @@ pub fn icrc37_max_revoke_approvals() -> Option<Nat> {
 // Returns `true` if an active approval, i.e., a token-level approval or collection-level approval
 #[query]
 pub fn icrc37_is_approved(args: Vec<IsApprovedArg>) -> Vec<bool> {
-    if ic_cdk::caller() == Principal::anonymous() {
-        return vec![false; args.len()];
-    }
-
     STATE.with(|s| s.borrow().icrc37_is_approved(args))
 }
 

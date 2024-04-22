@@ -1350,13 +1350,18 @@ impl State {
             return vec![];
         }
 
-        let max_update_batch_size = self.icrc7_max_update_batch_size().unwrap_or_default();
-        if args.len() > max_update_batch_size as usize {
+        let max_query_batch_size = self.icrc7_max_query_batch_size().unwrap_or_default();
+        if args.len() > max_query_batch_size as usize {
             return vec![];
         }
 
         let caller = ic_cdk::caller();
         let current_time = ic_cdk::api::time();
+
+        if caller == Principal::anonymous() {
+            return vec![false; args.len()];
+        }
+
         let mut result: Vec<bool> = vec![];
         for arg in args.iter() {
             let caller_account = account_transformer(Account {
