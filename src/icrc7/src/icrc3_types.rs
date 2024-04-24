@@ -1,4 +1,4 @@
-use candid::CandidType;
+use candid::{CandidType, Principal};
 use icrc_ledger_types::{
     icrc::generic_value::{Hash, Map, Value},
     icrc1::account::Account,
@@ -100,4 +100,31 @@ fn account_value(Account { owner, subaccount }: Account) -> Value {
         parts.push(Value::blob(subaccount.as_slice()));
     }
     Value::Array(parts)
+}
+
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+pub enum IndexType {
+    Managed,
+    Stable,
+    StableTyped,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct InitArchiveArg {
+    #[serde(rename = "archiveControllers")]
+    pub archive_controllers: Option<Option<Vec<Principal>>>,
+    #[serde(rename = "archiveCycles")]
+    pub archive_cycles: u128,
+    #[serde(rename = "archiveIndexType")]
+    pub archive_index_type: IndexType,
+    #[serde(rename = "maxActiveRecords")]
+    pub max_active_records: u128,
+    #[serde(rename = "maxArchivePages")]
+    pub max_archive_pages: u128,
+    #[serde(rename = "maxRecordsInArchiveInstance")]
+    pub max_records_in_archive_instance: u128,
+    #[serde(rename = "maxRecordsToArchive")]
+    pub max_records_to_archive: u128,
+    #[serde(rename = "settleToRecords")]
+    pub settle_to_records: u128,
 }
