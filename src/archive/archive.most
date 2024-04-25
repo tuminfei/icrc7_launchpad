@@ -1,0 +1,39 @@
+// Version: 1.0.0
+type IndexType = {#Managed; #Stable; #StableTyped};
+type OffsetInfo = {offset : Nat64; size : Nat; type_of : ?Nat};
+type Region__1 = Region;
+type Region__2 = Region__1;
+type Vector<X> =
+  {var data_blocks : [var [var ?X]]; var i_block : Nat; var i_element : Nat};
+actor {
+  stable var args :
+    {
+      firstIndex : Nat;
+      indexType : IndexType;
+      maxPages : Nat;
+      maxRecords : Nat
+    };
+  stable var memstore :
+    {
+      var currentOffset : Nat64;
+      var currentPages : Nat64;
+      items :
+        {
+          #Managed : Vector<OffsetInfo>;
+          #Stable :
+            {
+              var count : Nat64;
+              var currentPages : Nat64;
+              var indexRegion : Region__2
+            };
+          #StableTyped :
+            {
+              var count : Nat64;
+              var currentPages : Nat64;
+              var indexRegion : Region__2
+            }
+        };
+      var maxPages : Nat64;
+      var region : Region__2
+    }
+};

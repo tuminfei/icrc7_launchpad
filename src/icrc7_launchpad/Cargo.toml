@@ -1,5 +1,5 @@
 [package]
-name = "icrc7_launchpad_backend"
+name = "icrc7_launchpad"
 version = "0.1.0"
 edition = "2021"
 

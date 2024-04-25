@@ -9,6 +9,11 @@
       "candid": "src/icrc7/icrc7.did",
       "package": "icrc7",
       "type": "rust"
+    },
+    "archive": {
+      "candid": "src/archive/archive.did",
+      "type": "custom",
+      "wasm": "src/archive/archive.wasm"
     }
   },
   "defaults": {
