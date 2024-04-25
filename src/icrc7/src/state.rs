@@ -112,11 +112,6 @@ pub struct State {
     pub tokens: StableBTreeMap<u128, Icrc7Token, Memory>,
     pub txn_count: u128,
     pub next_token_id: u128,
-    #[serde(skip, default = "get_log_memory")]
-    pub txn_log: StableBTreeMap<u128, Transaction, Memory>,
-    pub archive_log_canister: Option<Principal>,
-    pub sync_pending_txn_ids: Option<Vec<u128>>,
-    pub archive_txn_count: u128,
 
     pub approval_ledger_info: LedgerInfo,
     #[serde(skip, default = "get_token_approvals_memory")]
@@ -125,6 +120,11 @@ pub struct State {
     pub collection_approvals: StableBTreeMap<UserAccount, CollectionApprovalInfo, Memory>,
 
     pub archive_ledger_info: ArchiveLedgerInfo,
+    #[serde(skip, default = "get_log_memory")]
+    pub txn_ledger: StableBTreeMap<u128, Transaction, Memory>,
+    pub archive_log_canister: Option<Principal>,
+    pub sync_pending_txn_ids: Option<Vec<u128>>,
+    pub archive_txn_count: u128,
 }
 
 impl Default for State {
@@ -148,7 +148,7 @@ impl Default for State {
             tokens: get_token_map_memory(),
             txn_count: 0,
             next_token_id: 0,
-            txn_log: get_log_memory(),
+            txn_ledger: get_log_memory(),
             archive_log_canister: None,
             sync_pending_txn_ids: None,
             archive_txn_count: 0,
@@ -278,7 +278,7 @@ impl State {
     ) -> Result<(), TransferError> {
         let mut count = self.txn_count;
         while count != 0 {
-            let txn = self.txn_log.get(&count).unwrap();
+            let txn = self.txn_ledger.get(&count).unwrap();
             if txn.ts < *allowed_past_time {
                 return Ok(());
             }
@@ -319,7 +319,7 @@ impl State {
     ) -> u128 {
         let txn_id = self.get_txn_id();
         let txn = Transaction::new(txn_id, txn_type, at, memo);
-        self.txn_log.insert(txn_id, txn);
+        self.txn_ledger.insert(txn_id, txn);
         txn_id
     }
 
@@ -1469,7 +1469,7 @@ impl State {
             ic_cdk::trap("Exceeds Max Offset Value")
         }
         let tx_logs = self
-            .txn_log
+            .txn_ledger
             .iter()
             .skip(offset as usize)
             .take(page_size as usize)
@@ -1481,7 +1481,7 @@ impl State {
 
     pub fn get_txn_logs(&self, size: usize) -> Vec<Transaction> {
         let tx_logs: Vec<Transaction> = self
-            .txn_log
+            .txn_ledger
             .iter()
             .take(size)
             .map(|(_, txn)| txn.clone())
@@ -1492,7 +1492,7 @@ impl State {
 
     pub fn remove_txn_logs(&mut self, txn_ids: &Vec<u128>) -> bool {
         for txn_id in txn_ids {
-            self.txn_log.remove(txn_id);
+            self.txn_ledger.remove(txn_id);
         }
         self.sync_pending_txn_ids = None;
         self.archive_txn_count += txn_ids.len() as u128;
