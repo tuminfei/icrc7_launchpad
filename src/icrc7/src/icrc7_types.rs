@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{BurnError, InsertTransactionError, MintError, TransferError},
     icrc37_types::InitApprovalsArg,
+    icrc3_types::InitArchiveArg,
 };
 
 pub static TRANSACTION_TRANSFER_OP: &str = "7xfer";
@@ -369,6 +370,7 @@ pub struct InitArg {
     pub tx_window: Option<u64>,
     pub permitted_drift: Option<u64>,
     pub approval_init: Option<InitApprovalsArg>,
+    pub archive_init: Option<InitArchiveArg>,
 }
 
 #[derive(CandidType)]

@@ -6,7 +6,7 @@ use icrc_ledger_types::{
 
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
-use std::{convert::From, ops::Deref, string::ToString};
+use std::{collections::HashMap, convert::From, ops::Deref, string::ToString};
 
 use crate::Transaction;
 
@@ -109,6 +109,82 @@ pub enum IndexType {
     StableTyped,
 }
 
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+pub struct TransactionRange {
+    pub start: u128,
+    pub length: u128,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+pub struct ArchiveLedgerInfo {
+    pub archives: HashMap<Principal, TransactionRange>,
+    pub local_ledger_size: u128,
+    pub supported_blocks: Vec<BlockType>,
+    pub last_index: u128,
+    pub first_index: u128,
+    pub is_cleaning: bool,
+    pub latest_hash: Option<Vec<u8>>,
+    pub setting: ArchiveSetting,
+}
+
+impl Default for ArchiveLedgerInfo {
+    fn default() -> Self {
+        Self {
+            archives: HashMap::new(),
+            local_ledger_size: 0,
+            supported_blocks: vec![],
+            last_index: 0,
+            first_index: 0,
+            is_cleaning: false,
+            latest_hash: None,
+            setting: ArchiveSetting::default(),
+        }
+    }
+}
+
+impl ArchiveLedgerInfo {
+    pub fn new(setting: Option<ArchiveSetting>) -> Self {
+        let setting = setting.unwrap_or(ArchiveSetting::default());
+        Self {
+            archives: HashMap::new(),
+            local_ledger_size: 0,
+            supported_blocks: vec![],
+            last_index: 0,
+            first_index: 0,
+            is_cleaning: false,
+            latest_hash: None,
+            setting,
+        }
+    }
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct ArchiveSetting {
+    pub archive_controllers: Option<Option<Vec<Principal>>>,
+    pub archive_cycles: u128,
+    pub archive_index_type: IndexType,
+    pub max_active_records: u128,
+    pub max_archive_pages: u128,
+    pub max_records_in_archive_instance: u128,
+    pub max_records_to_archive: u128,
+    pub settle_to_records: u128,
+}
+
+impl Default for ArchiveSetting {
+    fn default() -> Self {
+        Self {
+            archive_controllers: None,
+            archive_cycles: 2_000_000_000_000,
+            archive_index_type: IndexType::Stable,
+            max_active_records: 2000,
+            max_archive_pages: 62500,
+            max_records_in_archive_instance: 10_000_000,
+            max_records_to_archive: 10_000,
+            settle_to_records: 1000,
+        }
+    }
+}
+
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct InitArchiveArg {
     #[serde(rename = "archiveControllers")]
@@ -127,4 +203,19 @@ pub struct InitArchiveArg {
     pub max_records_to_archive: u128,
     #[serde(rename = "settleToRecords")]
     pub settle_to_records: u128,
+}
+
+impl InitArchiveArg {
+    pub fn to_archive_setting(self) -> ArchiveSetting {
+        ArchiveSetting {
+            archive_controllers: self.archive_controllers,
+            archive_cycles: self.archive_cycles,
+            archive_index_type: self.archive_index_type,
+            max_active_records: self.max_active_records,
+            max_archive_pages: self.max_archive_pages,
+            max_records_in_archive_instance: self.max_records_in_archive_instance,
+            max_records_to_archive: self.max_records_to_archive,
+            settle_to_records: self.settle_to_records,
+        }
+    }
 }

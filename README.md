@@ -1,5 +1,34 @@
 # icrc7_launchpad
 
+## Init
+
+ICRC37 Init args:
+
+```
+    type InitApprovalsArg = record {
+        max_approvals : opt nat16;
+        max_approvals_per_token_or_collection : opt nat16;
+        settle_to_approvals : opt nat16;
+        max_revoke_approvals : opt nat16;
+        collection_approval_requires_token : opt bool;
+    };
+```
+
+ICRC3 Init args:
+
+```
+    type InitArchiveArg = record {
+        maxRecordsToArchive : nat;   //Max number of archive items to archive in one round
+        archiveIndexType : IndexType;  //Index type to use for the memory of the archive
+        maxArchivePages : nat;   //Max number of pages allowed on the archivserver
+        settleToRecords : nat;  //number of records to settle to during the clean up process
+        archiveCycles : nat;  //number of cycles to sent to a new archive canister;
+        maxActiveRecords : nat;  //allowed max active records on this canister
+        maxRecordsInArchiveInstance : nat;  //specify the max number of archive items to put on an archive instance
+        archiveControllers : opt opt vec principal;   //override the default controllers. The canister will always add itself to this group;
+    };
+```
+
 ## ICIC7
 
 ### ICRC-7

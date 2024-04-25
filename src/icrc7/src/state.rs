@@ -12,6 +12,7 @@ use crate::{
         RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
         TransferFromResult, UserAccount,
     },
+    icrc3_types::ArchiveLedgerInfo,
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
         TransferArg, TransferResult,
@@ -116,11 +117,14 @@ pub struct State {
     pub archive_log_canister: Option<Principal>,
     pub sync_pending_txn_ids: Option<Vec<u128>>,
     pub archive_txn_count: u128,
+
     pub approval_ledger_info: LedgerInfo,
     #[serde(skip, default = "get_token_approvals_memory")]
     pub token_approvals: StableBTreeMap<u128, TokenApprovalInfo, Memory>,
     #[serde(skip, default = "get_collection_approvals_memory")]
     pub collection_approvals: StableBTreeMap<UserAccount, CollectionApprovalInfo, Memory>,
+
+    pub archive_ledger_info: ArchiveLedgerInfo,
 }
 
 impl Default for State {
@@ -151,6 +155,7 @@ impl Default for State {
             approval_ledger_info: LedgerInfo::default(),
             token_approvals: get_token_approvals_memory(),
             collection_approvals: get_collection_approvals_memory(),
+            archive_ledger_info: ArchiveLedgerInfo::default(),
         }
     }
 }

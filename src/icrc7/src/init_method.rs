@@ -3,7 +3,8 @@ use ic_stable_structures::{writer::Writer, Memory};
 use icrc_ledger_types::icrc1::account::Account;
 
 use crate::{
-    icrc37_types::LedgerInfo, icrc7_types::InitArg, state::STATE, utils::account_transformer,
+    icrc37_types::LedgerInfo, icrc3_types::ArchiveLedgerInfo, icrc7_types::InitArg, state::STATE,
+    utils::account_transformer,
 };
 
 #[init]
@@ -43,6 +44,11 @@ pub fn init(arg: InitArg) {
         }
     }
 
+    let mut archive_ledger_info = ArchiveLedgerInfo::default();
+    if let Some(archive_init) = arg.archive_init {
+        archive_ledger_info = ArchiveLedgerInfo::new(Some(archive_init.to_archive_setting()))
+    }
+
     STATE.with(|s| {
         let mut s = s.borrow_mut();
         s.minting_authority = Some(minting_authority);
@@ -60,6 +66,7 @@ pub fn init(arg: InitArg) {
         s.tx_window = arg.tx_window;
         s.permitted_drift = arg.permitted_drift;
         s.approval_ledger_info = ledger_info;
+        s.archive_ledger_info = archive_ledger_info;
     })
 }
 

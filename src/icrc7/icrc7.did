@@ -50,12 +50,23 @@ type BurnError = variant {
   Unauthorized;
   GenericBatchError : record { message : text; error_code : nat };
 };
+type IndexType = variant { Stable; StableTyped; Managed };
 type InitApprovalsArg = record {
   max_approvals : opt nat16;
   max_approvals_per_token_or_collection : opt nat16;
   settle_to_approvals : opt nat16;
   max_revoke_approvals : opt nat16;
   collection_approval_requires_token : opt bool;
+};
+type InitArchiveArg = record {
+  maxRecordsToArchive : nat;
+  archiveIndexType : IndexType;
+  maxArchivePages : nat;
+  settleToRecords : nat;
+  archiveCycles : nat;
+  maxActiveRecords : nat;
+  maxRecordsInArchiveInstance : nat;
+  archiveControllers : opt opt vec principal;
 };
 type InitArg = record {
   icrc7_supply_cap : opt nat;
@@ -64,6 +75,7 @@ type InitArg = record {
   minting_account : opt Account;
   icrc7_max_query_batch_size : opt nat16;
   permitted_drift : opt nat64;
+  archive_init : opt InitArchiveArg;
   icrc7_max_take_value : opt nat;
   icrc7_max_memo_size : opt nat32;
   icrc7_symbol : text;
