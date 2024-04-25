@@ -1,46 +1,10 @@
 use ic_cdk_macros::query;
 
 use crate::icrc3_types::BlockType;
+use crate::state::STATE;
 
 // Returns all the supported block types.
 #[query]
 pub fn icrc3_supported_block_types() -> Vec<BlockType> {
-    vec![
-        BlockType {
-            block_type: "7mint".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
-        },
-        BlockType {
-            block_type: "7burn".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
-        },
-        BlockType {
-            block_type: "7xfer".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
-        },
-        BlockType {
-            block_type: "7update".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
-        },
-        BlockType {
-            block_type: "37appr".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md".into(),
-        },
-        BlockType {
-            block_type: "37appr_coll".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md".into(),
-        },
-        BlockType {
-            block_type: "37revoke".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md".into(),
-        },
-        BlockType {
-            block_type: "37revoke_coll".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md".into(),
-        },
-        BlockType {
-            block_type: "37xfer".into(),
-            url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md".into(),
-        },
-    ]
+    STATE.with(|s| s.borrow().archive_ledger_info.supported_blocks.clone())
 }

@@ -148,12 +148,54 @@ impl ArchiveLedgerInfo {
         Self {
             archives: HashMap::new(),
             local_ledger_size: 0,
-            supported_blocks: vec![],
             last_index: 0,
             first_index: 0,
             is_cleaning: false,
             latest_hash: None,
             setting,
+            supported_blocks: vec![
+                BlockType {
+                    block_type: "7mint".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
+                },
+                BlockType {
+                    block_type: "7burn".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
+                },
+                BlockType {
+                    block_type: "7xfer".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
+                },
+                BlockType {
+                    block_type: "7update".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-7/ICRC-7.md".into(),
+                },
+                BlockType {
+                    block_type: "37appr".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md"
+                        .into(),
+                },
+                BlockType {
+                    block_type: "37appr_coll".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md"
+                        .into(),
+                },
+                BlockType {
+                    block_type: "37revoke".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md"
+                        .into(),
+                },
+                BlockType {
+                    block_type: "37revoke_coll".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md"
+                        .into(),
+                },
+                BlockType {
+                    block_type: "37xfer".into(),
+                    url: "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-37/ICRC-37.md"
+                        .into(),
+                },
+            ],
         }
     }
 }
