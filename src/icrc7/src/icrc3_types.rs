@@ -261,3 +261,8 @@ impl InitArchiveArg {
         }
     }
 }
+
+#[derive(CandidType, Deserialize, Debug)]
+pub struct GetArchiveArgs {
+    pub from: Option<Principal>,
+}
