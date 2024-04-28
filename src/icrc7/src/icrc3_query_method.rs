@@ -1,6 +1,6 @@
 use ic_cdk_macros::query;
 
-use crate::icrc3_types::{BlockType, GetArchiveArgs};
+use crate::icrc3_types::{BlockType, GetArchiveArgs, GetBlocksArgs, GetBlocksResult, Tip};
 use crate::state::STATE;
 use icrc_ledger_types::icrc3::{archive::ArchiveInfo, blocks::DataCertificate};
 
@@ -21,4 +21,23 @@ pub fn icrc3_get_archives(_arg: GetArchiveArgs) -> Vec<ArchiveInfo> {
 pub fn icrc3_get_tip_certificate() -> Option<DataCertificate> {
     // Only the Ledger certifies the tip of the chain.
     None
+}
+
+// Get icrc3 blocks information
+#[query]
+pub fn icrc3_get_blocks(_arg: GetBlocksArgs) -> GetBlocksResult {
+    return GetBlocksResult {
+        blocks: vec![],
+        log_length: 0,
+        archived_blocks: vec![],
+    };
+}
+
+#[query]
+pub fn get_tip() -> Tip {
+    return Tip {
+        hash_tree: vec![],
+        last_block_hash: vec![],
+        last_block_index: vec![],
+    };
 }

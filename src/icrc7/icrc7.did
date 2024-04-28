@@ -31,6 +31,10 @@ type ArchiveInfo = record {
   canister_id : principal;
   block_range_start : nat;
 };
+type ArchivedTransactionResponse = record {
+  args : vec TransactionRange;
+  callback : func (vec TransactionRange) -> (GetTransactionsResult) query;
+};
 type BTreeMap = vec record {
   text;
   variant {
@@ -57,6 +61,16 @@ type BurnError = variant {
 };
 type DataCertificate = record { certificate : opt blob; hash_tree : blob };
 type GetArchiveArgs = record { from : opt principal };
+type GetBlocksResult = record {
+  log_length : nat;
+  blocks : vec ArchivedTransactionResponse;
+  archived_blocks : blob;
+};
+type GetTransactionsResult = record {
+  log_length : nat;
+  blocks : Vec;
+  archived_blocks : blob;
+};
 type IndexType = variant { Stable; StableTyped; Managed };
 type InitApprovalsArg = record {
   max_approvals : opt nat16;
@@ -165,6 +179,11 @@ type RevokeTokenApprovalError = variant {
   TooOld;
 };
 type Standard = record { url : text; name : text };
+type Tip = record {
+  last_block_index : blob;
+  hash_tree : blob;
+  last_block_hash : blob;
+};
 type TokenApproval = record { token_id : nat; approval_info : ApprovalInfo };
 type Transaction = record {
   op : text;
@@ -177,6 +196,7 @@ type Transaction = record {
   meta : opt vec record { text; Value };
   spender : opt Account;
 };
+type TransactionRange = record { start : nat; length : nat };
 type TransferArg = record {
   to : Account;
   token_id : nat;
@@ -221,9 +241,16 @@ type Value = variant {
   Text : text;
   Array : vec Value;
 };
+type Vec = vec record {
+  args : vec record { start : nat; length : nat };
+  callback : func (vec record { start : nat; length : nat }) -> (
+      record { log_length : nat; blocks : Vec; archived_blocks : blob },
+    ) query;
+};
 type WalletReceiveResult = record { accepted : nat64 };
 service : (InitArg) -> {
   __get_candid_interface_tmp_hack : () -> (text) query;
+  get_tip : () -> (Tip) query;
   icrc37_approve_collection : (vec ApproveCollectionArg) -> (vec opt Result);
   icrc37_approve_tokens : (vec ApproveTokenArg) -> (vec opt Result_1);
   icrc37_get_collection_approvals : (Account, opt ApprovalInfo, opt nat) -> (
@@ -244,6 +271,7 @@ service : (InitArg) -> {
     );
   icrc37_transfer_from : (vec TransferFromArg) -> (vec opt Result_4);
   icrc3_get_archives : (GetArchiveArgs) -> (vec ArchiveInfo) query;
+  icrc3_get_blocks : (vec TransactionRange) -> (GetBlocksResult) query;
   icrc3_get_tip_certificate : () -> (opt DataCertificate) query;
   icrc3_supported_block_types : () -> (vec BlockType) query;
   icrc7_archive_log_canister : () -> (opt principal) query;
