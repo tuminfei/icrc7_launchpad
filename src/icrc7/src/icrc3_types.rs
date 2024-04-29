@@ -328,12 +328,12 @@ impl<Input: CandidType, Output: CandidType> Clone for GetTransactionsFn<Input, O
 impl<Input: CandidType, Output: CandidType> From<GetTransactionsFn<Input, Output>>
     for candid::types::reference::Func
 {
-    fn from(archive_fn: GetTransactionsFn<Input, Output>) -> Self {
-        let p: &Principal = &Principal::try_from(archive_fn.canister_id.as_ref())
+    fn from(get_transactions_fn: GetTransactionsFn<Input, Output>) -> Self {
+        let p: &Principal = &Principal::try_from(get_transactions_fn.canister_id.as_ref())
             .expect("could not deserialize principal");
         Self {
             principal: *p,
-            method: archive_fn.method,
+            method: get_transactions_fn.method,
         }
     }
 }
