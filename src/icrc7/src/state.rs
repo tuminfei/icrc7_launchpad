@@ -25,11 +25,15 @@ use crate::{
     BurnArg, SyncReceipt, TRANSACTION_TRANSFER_FROM_OP, TRANSACTION_TRANSFER_OP,
 };
 use candid::{CandidType, Decode, Encode, Principal};
+use ic_certified_map::{Hash, RbTree};
 use ic_stable_structures::{
     memory_manager::MemoryManager, storable::Bound, DefaultMemoryImpl, StableBTreeMap, Storable,
 };
-use icrc_ledger_types::{icrc::generic_value::Value, icrc1::account::Account};
+use icrc_ledger_types::{
+    icrc::generic_value::Value, icrc1::account::Account, icrc3::blocks::DataCertificate,
+};
 use serde::{Deserialize, Serialize};
+use serde_bytes::ByteBuf;
 
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct Icrc7Token {
@@ -1479,6 +1483,28 @@ impl State {
         tx_logs
     }
 
+    pub fn icrc3_get_tip_certificate(&self) -> Option<DataCertificate> {
+        let certificate = ic_cdk::api::data_certificate();
+        let certificate_buf: Option<ByteBuf> = certificate.map(|vec| ByteBuf::from(vec));
+        let witness = TREE.with(|tree| {
+            let tree = tree.borrow();
+            let mut witness = vec![];
+            let mut witness_serializer = serde_cbor::Serializer::new(&mut witness);
+            let _ = witness_serializer.self_describe();
+            tree.witness(b"last_block_index")
+                .serialize(&mut witness_serializer)
+                .unwrap();
+            tree.witness(b"last_block_hash")
+                .serialize(&mut witness_serializer)
+                .unwrap();
+            witness
+        });
+        return Some(DataCertificate {
+            certificate: certificate_buf,
+            hash_tree: ByteBuf::from(witness),
+        });
+    }
+
     pub fn get_txn_logs(&self, size: usize) -> Vec<Transaction> {
         let tx_logs: Vec<Transaction> = self
             .txn_ledger
@@ -1503,6 +1529,7 @@ impl State {
 thread_local! {
     pub static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
     pub static STATE: RefCell<State> = RefCell::default();
+    pub static TREE: RefCell<RbTree<&'static str, Hash>> = RefCell::new(RbTree::new());
 }
 
 pub async fn call_sync_logs(

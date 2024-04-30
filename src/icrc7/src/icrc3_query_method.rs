@@ -19,8 +19,7 @@ pub fn icrc3_get_archives(_arg: GetArchiveArgs) -> Vec<ArchiveInfo> {
 // The Ledger MUST certify the last block (tip) recorded
 #[query]
 pub fn icrc3_get_tip_certificate() -> Option<DataCertificate> {
-    // Only the Ledger certifies the tip of the chain.
-    None
+    STATE.with(|s| s.borrow().icrc3_get_tip_certificate())
 }
 
 // Get icrc3 blocks information
