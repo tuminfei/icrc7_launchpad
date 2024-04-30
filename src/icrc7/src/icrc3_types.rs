@@ -1,4 +1,5 @@
-use candid::{CandidType, Deserialize, Principal};
+use candid::{CandidType, Decode, Deserialize, Encode, Principal};
+use ic_stable_structures::{storable::Bound, Storable};
 use icrc_ledger_types::{
     icrc::generic_value::{Hash, Map, Value},
     icrc1::account::Account,
@@ -13,6 +14,18 @@ use crate::Transaction;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Block(Value);
+
+impl Storable for Block {
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(Encode!(self).unwrap())
+    }
+
+    const BOUND: Bound = Bound::Unbounded;
+}
 
 impl AsRef<Value> for Block {
     #[inline]
@@ -46,9 +59,12 @@ impl TryFrom<Value> for Block {
 }
 
 impl Block {
-    pub fn new(phash: Hash, tx: Transaction) -> Self {
+    pub fn new(phash: Option<Hash>, tx: Transaction) -> Self {
         let mut block = Map::new();
-        block.insert("phash".to_string(), Value::Blob(ByteBuf::from(phash)));
+        if let Some(phash) = phash {
+            block.insert("phash".to_string(), Value::Blob(ByteBuf::from(phash)));
+        };
+
         block.insert("btype".to_string(), Value::Text(tx.op));
         block.insert("ts".to_string(), Value::Nat(tx.ts.into()));
 
@@ -124,7 +140,7 @@ pub struct ArchiveLedgerInfo {
     pub last_index: u128,
     pub first_index: u128,
     pub is_cleaning: bool,
-    pub latest_hash: Option<Vec<u8>>,
+    pub latest_hash: Option<Hash>,
     pub setting: ArchiveSetting,
 }
 

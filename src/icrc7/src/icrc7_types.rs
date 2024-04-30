@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{BurnError, InsertTransactionError, MintError, TransferError},
     icrc37_types::InitApprovalsArg,
-    icrc3_types::InitArchiveArg,
+    icrc3_types::{Block, InitArchiveArg},
 };
 
 pub static TRANSACTION_TRANSFER_OP: &str = "7xfer";
@@ -74,6 +74,7 @@ pub struct Transaction {
     pub exp: Option<u64>,
     pub meta: Option<Icrc7TokenMetadata>,
     pub memo: Option<Vec<u8>>,
+    pub block: Option<Block>,
 }
 
 impl Transaction {

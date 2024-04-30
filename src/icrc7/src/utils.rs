@@ -1,5 +1,5 @@
 use candid::Principal;
-use icrc_ledger_types::icrc::generic_value::Value;
+use icrc_ledger_types::icrc::generic_value::{self, Value};
 use icrc_ledger_types::icrc1::account::{Account, Subaccount, DEFAULT_SUBACCOUNT};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -36,14 +36,13 @@ pub fn burn_account() -> Account {
     }
 }
 
-pub fn hash_icrc_value(value: &Value) -> Vec<u8> {
+pub fn hash_icrc_value(value: &Value) -> generic_value::Hash {
     let mut hasher = DefaultHasher::new();
     encode_value(value, &mut hasher);
     let hash = hasher.finish();
 
-    // Convert hash u64 to little-endian byte array
-    let mut result = Vec::new();
-    result.extend_from_slice(&hash.to_le_bytes());
+    let mut result = [0; 32];
+    result.copy_from_slice(&hash.to_le_bytes());
     result
 }
 

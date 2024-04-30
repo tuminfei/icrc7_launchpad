@@ -47,6 +47,15 @@ type BTreeMap = vec record {
     Array : vec Value;
   };
 };
+type Block = variant {
+  Int : int;
+  Map : BTreeMap;
+  Nat : nat;
+  Nat64 : nat64;
+  Blob : blob;
+  Text : text;
+  Array : vec Value;
+};
 type BlockType = record { url : text; block_type : text };
 type BurnArg = record {
   token_id : nat;
@@ -193,7 +202,8 @@ type Transaction = record {
   tid : nat;
   from : opt Account;
   memo : opt blob;
-  meta : opt vec record { text; Value };
+  meta : opt vec record { text; Block };
+  block : opt Block;
   spender : opt Account;
 };
 type TransactionRange = record { start : nat; length : nat };

@@ -12,7 +12,7 @@ use crate::{
         RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
         TransferFromResult, UserAccount,
     },
-    icrc3_types::ArchiveLedgerInfo,
+    icrc3_types::{ArchiveLedgerInfo, Block},
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
         TransferArg, TransferResult,
@@ -21,11 +21,11 @@ use crate::{
         get_collection_approvals_memory, get_log_memory, get_token_approvals_memory,
         get_token_map_memory, Memory,
     },
-    utils::{account_transformer, burn_account},
+    utils::{account_transformer, burn_account, hash_icrc_value},
     BurnArg, SyncReceipt, TRANSACTION_TRANSFER_FROM_OP, TRANSACTION_TRANSFER_OP,
 };
 use candid::{CandidType, Decode, Encode, Principal};
-use ic_certified_map::{Hash, RbTree};
+use ic_certified_map::{leaf_hash, AsHashTree, Hash, RbTree};
 use ic_stable_structures::{
     memory_manager::MemoryManager, storable::Bound, DefaultMemoryImpl, StableBTreeMap, Storable,
 };
@@ -322,8 +322,28 @@ impl State {
         memo: Option<Vec<u8>>,
     ) -> u128 {
         let txn_id = self.get_txn_id();
-        let txn = Transaction::new(txn_id, txn_type, at, memo);
+        let mut txn = Transaction::new(txn_id, txn_type, at, memo);
+        let phash = self.archive_ledger_info.latest_hash;
+
+        let block = Block::new(phash, txn.clone());
+        let block_hash = hash_icrc_value(block.as_ref());
+
+        txn.block = Some(block);
         self.txn_ledger.insert(txn_id, txn);
+        self.archive_ledger_info.last_index = txn_id;
+        self.archive_ledger_info.latest_hash = Some(block_hash);
+
+        // set certified data
+        TREE.with(|tree| {
+            let mut tree = tree.borrow_mut();
+            tree.insert(
+                "last_block_index",
+                leaf_hash(&self.archive_ledger_info.last_index.to_be_bytes()),
+            );
+            tree.insert("last_block_hash", leaf_hash(&block_hash));
+            ic_cdk::api::set_certified_data(&tree.root_hash());
+        });
+
         txn_id
     }
 
