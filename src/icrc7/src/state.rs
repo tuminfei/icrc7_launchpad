@@ -12,7 +12,7 @@ use crate::{
         RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
         TransferFromResult, UserAccount,
     },
-    icrc3_types::{ArchiveLedgerInfo, Block},
+    icrc3_types::{ArchiveLedgerInfo, Block, Tip},
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
         TransferArg, TransferResult,
@@ -1523,6 +1523,27 @@ impl State {
             certificate: certificate_buf,
             hash_tree: ByteBuf::from(witness),
         });
+    }
+
+    pub fn icrc3_get_tip(&self) -> Tip {
+        let witness = TREE.with(|tree| {
+            let tree = tree.borrow();
+            let mut witness = vec![];
+            let mut witness_serializer = serde_cbor::Serializer::new(&mut witness);
+            let _ = witness_serializer.self_describe();
+            tree.witness(b"last_block_index")
+                .serialize(&mut witness_serializer)
+                .unwrap();
+            tree.witness(b"last_block_hash")
+                .serialize(&mut witness_serializer)
+                .unwrap();
+            witness
+        });
+        return Tip {
+            last_block_hash: self.archive_ledger_info.latest_hash.unwrap(),
+            last_block_index: self.archive_ledger_info.last_index.to_be_bytes().to_vec(),
+            hash_tree: witness,
+        };
     }
 
     pub fn get_txn_logs(&self, size: usize) -> Vec<Transaction> {

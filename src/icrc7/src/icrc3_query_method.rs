@@ -32,11 +32,8 @@ pub fn icrc3_get_blocks(_arg: GetBlocksArgs) -> GetBlocksResult {
     };
 }
 
+// Returns the latest hash and lastest index along with a witness
 #[query]
 pub fn get_tip() -> Tip {
-    return Tip {
-        hash_tree: vec![],
-        last_block_hash: vec![],
-        last_block_index: vec![],
-    };
+    STATE.with(|s| s.borrow().icrc3_get_tip())
 }

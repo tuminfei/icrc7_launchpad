@@ -295,7 +295,7 @@ pub struct QueryBlock {
 #[derive(CandidType, Deserialize, Debug)]
 pub struct Tip {
     pub hash_tree: Vec<u8>,
-    pub last_block_hash: Vec<u8>,
+    pub last_block_hash: Hash,
     pub last_block_index: Vec<u8>,
 }
 
