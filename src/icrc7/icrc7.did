@@ -26,11 +26,6 @@ type ApproveTokenError = variant {
   GenericBatchError : record { message : text; error_code : nat };
   TooOld;
 };
-type ArchiveInfo = record {
-  block_range_end : nat;
-  canister_id : principal;
-  block_range_start : nat;
-};
 type ArchivedTransactionResponse = record {
   args : vec TransactionRange;
   callback : func (vec TransactionRange) -> (GetTransactionsResult) query;
@@ -70,6 +65,11 @@ type BurnError = variant {
 };
 type DataCertificate = record { certificate : opt blob; hash_tree : blob };
 type GetArchiveArgs = record { from : opt principal };
+type GetArchivesResultItem = record {
+  end : nat;
+  canister_id : principal;
+  start : nat;
+};
 type GetBlocksResult = record {
   log_length : nat;
   blocks : vec ArchivedTransactionResponse;
@@ -280,7 +280,7 @@ service : (InitArg) -> {
       vec opt Result_3,
     );
   icrc37_transfer_from : (vec TransferFromArg) -> (vec opt Result_4);
-  icrc3_get_archives : (GetArchiveArgs) -> (vec ArchiveInfo) query;
+  icrc3_get_archives : (GetArchiveArgs) -> (vec GetArchivesResultItem) query;
   icrc3_get_blocks : (vec TransactionRange) -> (GetBlocksResult) query;
   icrc3_get_tip_certificate : () -> (opt DataCertificate) query;
   icrc3_supported_block_types : () -> (vec BlockType) query;

@@ -1,8 +1,10 @@
 use ic_cdk_macros::query;
 
-use crate::icrc3_types::{BlockType, GetArchiveArgs, GetBlocksArgs, GetBlocksResult, Tip};
+use crate::icrc3_types::{
+    BlockType, GetArchiveArgs, GetArchivesResultItem, GetBlocksArgs, GetBlocksResult, Tip,
+};
 use crate::state::STATE;
-use icrc_ledger_types::icrc3::{archive::ArchiveInfo, blocks::DataCertificate};
+use icrc_ledger_types::icrc3::blocks::DataCertificate;
 
 // Returns all the supported block types.
 #[query]
@@ -12,8 +14,8 @@ pub fn icrc3_supported_block_types() -> Vec<BlockType> {
 
 // Listing all the canisters containing its blocks
 #[query]
-pub fn icrc3_get_archives(_arg: GetArchiveArgs) -> Vec<ArchiveInfo> {
-    vec![]
+pub fn icrc3_get_archives(arg: GetArchiveArgs) -> Vec<GetArchivesResultItem> {
+    STATE.with(|s| s.borrow().icrc3_get_archives(arg))
 }
 
 // The Ledger MUST certify the last block (tip) recorded

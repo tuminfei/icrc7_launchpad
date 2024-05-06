@@ -389,3 +389,10 @@ pub struct ArchivedTransactionResponse {
 }
 
 pub type QueryTransactionsFn = GetTransactionsFn<Vec<TransactionRange>, GetTransactionsResult>;
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct GetArchivesResultItem {
+    pub canister_id: Principal,
+    pub start: u128,
+    pub end: u128,
+}

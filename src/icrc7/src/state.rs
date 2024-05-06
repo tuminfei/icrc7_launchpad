@@ -12,7 +12,7 @@ use crate::{
         RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
         TransferFromResult, UserAccount,
     },
-    icrc3_types::{ArchiveLedgerInfo, Block, Tip},
+    icrc3_types::{ArchiveLedgerInfo, Block, GetArchiveArgs, GetArchivesResultItem, Tip},
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
         TransferArg, TransferResult,
@@ -1523,6 +1523,48 @@ impl State {
             certificate: certificate_buf,
             hash_tree: ByteBuf::from(witness),
         });
+    }
+
+    pub fn icrc3_get_archives(&self, arg: GetArchiveArgs) -> Vec<GetArchivesResultItem> {
+        let mut results: Vec<GetArchivesResultItem> = vec![];
+        let canister_id = ic_cdk::api::id();
+        let mut is_found = match arg.from {
+            None => true,
+            Some(_) => false,
+        };
+
+        if is_found {
+            results.push(GetArchivesResultItem {
+                canister_id: canister_id,
+                start: self.archive_ledger_info.first_index,
+                end: self.archive_ledger_info.last_index,
+            })
+        } else {
+            if let Some(from) = arg.from {
+                if from == canister_id {
+                    is_found = true;
+                }
+            }
+        }
+
+        for (principal, range) in self.archive_ledger_info.archives.iter() {
+            if is_found {
+                if range.start + range.length >= 1 {
+                    results.push(GetArchivesResultItem {
+                        canister_id: *principal,
+                        start: range.start,
+                        end: range.start + range.length,
+                    })
+                }
+            } else {
+                if let Some(from) = arg.from {
+                    if from == *principal {
+                        is_found = true;
+                    }
+                }
+            }
+        }
+        return results;
     }
 
     pub fn icrc3_get_tip(&self) -> Tip {
