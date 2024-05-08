@@ -401,4 +401,6 @@ pub struct GetArchivesResultItem {
 pub struct ArchiveCreateArgs {
     pub max_pages: u128,
     pub max_records: u128,
+    pub first_index: u128,
+    pub controllers: Option<Option<Vec<Principal>>>,
 }

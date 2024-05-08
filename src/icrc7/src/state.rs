@@ -1,6 +1,7 @@
 use std::{cell::RefCell, collections::BTreeMap, time::Duration};
 
 use crate::{
+    archive::create_archive_canister,
     errors::{
         ApproveCollectionError, ApproveTokenError, BurnError, InsertTransactionError, MintError,
         RevokeCollectionApprovalError, RevokeTokenApprovalError, TransferError, TransferFromError,
@@ -12,7 +13,10 @@ use crate::{
         RevokeTokenApprovalResult, TokenApproval, TokenApprovalInfo, TransferFromArg,
         TransferFromResult, UserAccount,
     },
-    icrc3_types::{ArchiveLedgerInfo, Block, GetArchiveArgs, GetArchivesResultItem, Tip},
+    icrc3_types::{
+        ArchiveCreateArgs, ArchiveLedgerInfo, Block, GetArchiveArgs, GetArchivesResultItem, Tip,
+        TransactionRange,
+    },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
         TransferArg, TransferResult,
@@ -1632,6 +1636,11 @@ impl State {
         }
         return to_archive;
     }
+
+    pub fn add_archive(&mut self, canister_id: Principal, range: TransactionRange) -> bool {
+        self.archive_ledger_info.archives.insert(canister_id, range);
+        return true;
+    }
 }
 
 thread_local! {
@@ -1693,10 +1702,17 @@ fn set_clean_up_timer() {
 async fn clean_local_ledger_task() {
     let txn_ledger_size = STATE.with(|s| s.borrow().txn_ledger.len());
     let setting = STATE.with(|s| s.borrow().archive_ledger_info.setting.clone());
+    let local_first_index = STATE.with(|s| s.borrow().archive_ledger_info.first_index);
     let max_active_records = setting.max_active_records;
     let max_records_in_archive_instance = setting.max_records_in_archive_instance;
     let max_records_to_archive = setting.max_records_to_archive;
     let settle_to_records = setting.settle_to_records;
+    let archive_cycles = setting.archive_cycles;
+    let archive_controllers = setting.archive_controllers;
+    let max_archive_pages = setting.max_archive_pages;
+
+    let local_cycles = ic_cdk::api::canister_balance128();
+
     let mut is_recall_at_end = false;
 
     let archive_count = STATE.with(|s| s.borrow().archive_ledger_info.archives.len());
@@ -1714,10 +1730,48 @@ async fn clean_local_ledger_task() {
     STATE.with(|s: &RefCell<State>| s.borrow_mut().archive_ledger_info.is_cleaning = true);
     ic_cdk::println!("clean_local_ledger_task: Now we are cleaning");
 
+    let mut last_archive: Option<(Principal, TransactionRange)> = None;
+    let mut capacity: u128 = 0;
+
     if archive_count == 0 {
         ic_cdk::println!("clean_local_ledger_task: create a new archive canister");
+        let create_args: ArchiveCreateArgs = ArchiveCreateArgs {
+            max_pages: max_archive_pages,
+            max_records: max_active_records,
+            first_index: 0,
+            controllers: archive_controllers,
+        };
+
+        if local_cycles > (archive_cycles * 2) {
+            let archive_canister: Result<Principal, String> =
+                create_archive_canister(create_args).await;
+            match archive_canister {
+                Ok(canister_id) => {
+                    let range = TransactionRange {
+                        start: 0,
+                        length: 0,
+                    };
+                    STATE.with(|s: &RefCell<State>| {
+                        s.borrow_mut().add_archive(canister_id, range.clone())
+                    });
+                    last_archive = Some((canister_id, range));
+                    capacity = max_records_in_archive_instance;
+                }
+                Err(_) => {
+                    ic_cdk::println!(
+                        "clean_local_ledger_task: create a new archive canister error"
+                    );
+                    STATE.with(|s: &RefCell<State>| {
+                        s.borrow_mut().archive_ledger_info.is_cleaning = false
+                    });
+                }
+            }
+        } else {
+            STATE.with(|s: &RefCell<State>| s.borrow_mut().archive_ledger_info.is_cleaning = false);
+            return;
+        }
     } else {
-        let last_archive = STATE.with(|s| {
+        let current_last_archive = STATE.with(|s| {
             s.borrow()
                 .archive_ledger_info
                 .archives
@@ -1726,68 +1780,111 @@ async fn clean_local_ledger_task() {
                 .last()
         });
 
-        if let Some(last_archive) = last_archive {
-            if last_archive.1.length >= max_records_in_archive_instance {
+        if let Some(current_last_archive) = current_last_archive {
+            if current_last_archive.1.length >= max_records_in_archive_instance {
                 ic_cdk::println!(
                     "clean_local_ledger_task: old archive is full, create a new archive canister"
                 );
+
+                let create_args: ArchiveCreateArgs = ArchiveCreateArgs {
+                    max_pages: max_archive_pages,
+                    max_records: max_active_records,
+                    first_index: current_last_archive.1.start + current_last_archive.1.length,
+                    controllers: archive_controllers,
+                };
+
+                if local_cycles > (archive_cycles * 2) {
+                    let archive_canister: Result<Principal, String> =
+                        create_archive_canister(create_args).await;
+                    match archive_canister {
+                        Ok(canister_id) => {
+                            let range = TransactionRange {
+                                start: local_first_index,
+                                length: 0,
+                            };
+                            STATE.with(|s: &RefCell<State>| {
+                                s.borrow_mut().add_archive(canister_id, range.clone())
+                            });
+                            last_archive = Some((canister_id, range));
+                            capacity = max_records_in_archive_instance;
+                        }
+                        Err(_) => {
+                            ic_cdk::println!(
+                                "clean_local_ledger_task: create a new archive canister error"
+                            );
+                            STATE.with(|s: &RefCell<State>| {
+                                s.borrow_mut().archive_ledger_info.is_cleaning = false
+                            });
+                        }
+                    }
+                } else {
+                    STATE.with(|s: &RefCell<State>| {
+                        s.borrow_mut().archive_ledger_info.is_cleaning = false
+                    });
+                    return;
+                }
             } else {
-                let capacity = max_records_in_archive_instance - last_archive.1.length;
-                let mut archive_amount = (txn_ledger_size as u128) - settle_to_records;
+                last_archive = Some(current_last_archive.clone());
+                capacity = max_records_in_archive_instance - current_last_archive.1.length;
+            }
+        }
 
-                if archive_amount > capacity {
-                    is_recall_at_end = true;
-                    archive_amount = capacity;
+        // call_append_transactions
+        if let Some(last_archive) = last_archive {
+            let mut archive_amount = (txn_ledger_size as u128) - settle_to_records;
+
+            if archive_amount > capacity {
+                is_recall_at_end = true;
+                archive_amount = capacity;
+            }
+
+            if archive_amount > max_records_to_archive {
+                is_recall_at_end = true;
+                archive_amount = max_records_to_archive;
+            }
+
+            let to_archive: BTreeMap<u128, Transaction> = STATE.with(|s| {
+                s.borrow_mut()
+                    .get_archive_txn_ledger(archive_amount as usize)
+            });
+
+            let mut to_archive_vec = Vec::new();
+            let mut to_archive_ids = Vec::new();
+            for (key_id, transaction) in to_archive.iter() {
+                to_archive_vec.push(transaction.block.clone().unwrap());
+                to_archive_ids.push(key_id.clone());
+            }
+            let to_archive_amount = to_archive_vec.len() as u128;
+
+            ic_cdk::println!(
+                "clean_local_ledger_task: to_archive size {}",
+                to_archive_amount
+            );
+
+            let call_result = call_append_transactions(last_archive.0, to_archive_vec).await;
+            match call_result {
+                Ok(_count) => {
+                    STATE.with(|s| s.borrow_mut().remove_txn_logs(&to_archive_ids));
+                    STATE.with(|s| {
+                        s.borrow_mut().archive_ledger_info.first_index += to_archive_amount
+                    });
+                    STATE.with(|s| {
+                        if let Some(transaction_range) = s
+                            .borrow_mut()
+                            .archive_ledger_info
+                            .archives
+                            .get_mut(&last_archive.0)
+                        {
+                            transaction_range.length += to_archive_amount;
+                            transaction_range.start = transaction_range.start;
+                        }
+                    });
                 }
-
-                if archive_amount > max_records_to_archive {
-                    is_recall_at_end = true;
-                    archive_amount = max_records_to_archive;
-                }
-
-                let to_archive: BTreeMap<u128, Transaction> = STATE.with(|s| {
-                    s.borrow_mut()
-                        .get_archive_txn_ledger(archive_amount as usize)
-                });
-
-                let mut to_archive_vec = Vec::new();
-                let mut to_archive_ids = Vec::new();
-                for (key_id, transaction) in to_archive.iter() {
-                    to_archive_vec.push(transaction.block.clone().unwrap());
-                    to_archive_ids.push(key_id.clone());
-                }
-                let to_archive_amount = to_archive_vec.len() as u128;
-
-                ic_cdk::println!(
-                    "clean_local_ledger_task: to_archive size {}",
-                    to_archive_amount
-                );
-
-                let call_result = call_append_transactions(last_archive.0, to_archive_vec).await;
-                match call_result {
-                    Ok(_count) => {
-                        STATE.with(|s| s.borrow_mut().remove_txn_logs(&to_archive_ids));
-                        STATE.with(|s| {
-                            s.borrow_mut().archive_ledger_info.first_index += to_archive_amount
-                        });
-                        STATE.with(|s| {
-                            if let Some(transaction_range) = s
-                                .borrow_mut()
-                                .archive_ledger_info
-                                .archives
-                                .get_mut(&last_archive.0)
-                            {
-                                transaction_range.length += to_archive_amount;
-                                transaction_range.start = transaction_range.start;
-                            }
-                        });
-                    }
-                    Err(_) => {
-                        STATE.with(|s: &RefCell<State>| {
-                            s.borrow_mut().archive_ledger_info.is_cleaning = false
-                        });
-                        ic_cdk::println!("clean_local_ledger_task: to_archive fail");
-                    }
+                Err(_) => {
+                    STATE.with(|s: &RefCell<State>| {
+                        s.borrow_mut().archive_ledger_info.is_cleaning = false
+                    });
+                    ic_cdk::println!("clean_local_ledger_task: to_archive fail");
                 }
             }
         }

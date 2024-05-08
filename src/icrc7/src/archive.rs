@@ -9,6 +9,8 @@ use crate::icrc3_types::{ArchiveCreateArgs, IndexType};
 
 pub const ARCHIVE_WASM: &[u8] = std::include_bytes!("./../../archive/archive.wasm.gz");
 
+pub const ARCHIVE_DEFAULT_CYCLES: u128 = 10_000_000_000_000;
+
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct ArchiveInitArgs {
     #[serde(rename = "firstIndex")]
@@ -22,10 +24,10 @@ pub struct ArchiveInitArgs {
 }
 
 impl ArchiveInitArgs {
-    fn new(max_pages: u128, max_records: u128) -> Self {
+    fn new(max_pages: u128, max_records: u128, first_index: u128) -> Self {
         Self {
-            first_index: 0,
             index_type: IndexType::Stable,
+            first_index,
             max_pages,
             max_records,
         }
@@ -33,30 +35,33 @@ impl ArchiveInitArgs {
 }
 
 #[allow(unused)]
-async fn create_archive_canister(arg: ArchiveCreateArgs) -> Result<Principal, String> {
-    let caller = ic_cdk::caller();
-    if caller == Principal::anonymous() {
-        return Err("Anonymous Caller".into());
+pub async fn create_archive_canister(arg: ArchiveCreateArgs) -> Result<Principal, String> {
+    let mut archive_controllers = vec![ic_cdk::id()];
+
+    if let Some(Some(controllers)) = arg.controllers {
+        if !controllers.is_empty() {
+            archive_controllers.extend(controllers);
+        }
     }
 
     let principal = match create_canister(
         CreateCanisterArgument {
             settings: Some(CanisterSettings {
-                controllers: Some(vec![ic_cdk::id(), caller.clone()]),
+                controllers: Some(archive_controllers),
                 compute_allocation: None,
                 memory_allocation: None,
                 freezing_threshold: None,
                 reserved_cycles_limit: None,
             }),
         },
-        10_000_000_000_000,
+        ARCHIVE_DEFAULT_CYCLES,
     )
     .await
     {
         Err((code, msg)) => return Err(format!("Rejection Code: {:?}, Message: {:?}", code, msg)),
         Ok((principal,)) => principal.canister_id,
     };
-    let init_arg = ArchiveInitArgs::new(arg.max_pages, arg.max_records);
+    let init_arg = ArchiveInitArgs::new(arg.max_pages, arg.max_records, arg.first_index);
     let init_arg = Encode!(&init_arg).unwrap();
     match install_code(InstallCodeArgument {
         mode: ic_cdk::api::management_canister::main::CanisterInstallMode::Install,
