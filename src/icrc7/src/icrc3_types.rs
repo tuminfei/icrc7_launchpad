@@ -4,11 +4,11 @@ use icrc_ledger_types::{
     icrc::generic_value::{Hash, Map, Value},
     icrc1::account::Account,
 };
-use std::marker::PhantomData;
+use std::{collections::BTreeMap, marker::PhantomData};
 
 use serde::Serialize;
 use serde_bytes::ByteBuf;
-use std::{collections::HashMap, convert::From, ops::Deref, string::ToString};
+use std::ops::Deref;
 
 use crate::Transaction;
 
@@ -134,7 +134,7 @@ pub struct TransactionRange {
 
 #[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
 pub struct ArchiveLedgerInfo {
-    pub archives: HashMap<Principal, TransactionRange>,
+    pub archives: BTreeMap<Principal, TransactionRange>,
     pub local_ledger_size: u128,
     pub supported_blocks: Vec<BlockType>,
     pub last_index: u128,
@@ -147,7 +147,7 @@ pub struct ArchiveLedgerInfo {
 impl Default for ArchiveLedgerInfo {
     fn default() -> Self {
         Self {
-            archives: HashMap::new(),
+            archives: BTreeMap::new(),
             local_ledger_size: 0,
             supported_blocks: vec![],
             last_index: 0,
@@ -163,7 +163,7 @@ impl ArchiveLedgerInfo {
     pub fn new(setting: Option<ArchiveSetting>) -> Self {
         let setting = setting.unwrap_or(ArchiveSetting::default());
         Self {
-            archives: HashMap::new(),
+            archives: BTreeMap::new(),
             local_ledger_size: 0,
             last_index: 0,
             first_index: 0,
