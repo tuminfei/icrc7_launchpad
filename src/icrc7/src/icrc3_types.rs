@@ -396,3 +396,9 @@ pub struct GetArchivesResultItem {
     pub start: u128,
     pub end: u128,
 }
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct ArchiveCreateArgs {
+    pub max_pages: u128,
+    pub max_records: u128,
+}

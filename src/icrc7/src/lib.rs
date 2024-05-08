@@ -16,6 +16,7 @@ pub mod utils;
 pub mod candid_file_generator;
 pub mod guards;
 pub mod errors;
+pub mod archive;
 
 use icrc7_types::*;
 
