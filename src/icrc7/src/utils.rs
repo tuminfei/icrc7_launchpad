@@ -42,7 +42,8 @@ pub fn hash_icrc_value(value: &Value) -> generic_value::Hash {
     let hash = hasher.finish();
 
     let mut result = [0; 32];
-    result.copy_from_slice(&hash.to_le_bytes());
+    let hash = hash.to_le_bytes();
+    result[..hash.len()].copy_from_slice(&hash);
     result
 }
 
