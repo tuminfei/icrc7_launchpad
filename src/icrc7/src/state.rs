@@ -344,7 +344,7 @@ impl State {
 
         txn.block = Some(block);
         self.txn_ledger.insert(txn_id, txn);
-        self.archive_ledger_info.last_index = txn_id;
+        self.archive_ledger_info.last_index += 1;
         self.archive_ledger_info.latest_hash = Some(block_hash);
         self.archive_ledger_info.local_ledger_size += 1;
 
@@ -1754,6 +1754,7 @@ async fn clean_local_ledger_task() {
                     STATE.with(|s: &RefCell<State>| {
                         s.borrow_mut().add_archive(canister_id, range.clone())
                     });
+
                     last_archive = Some((canister_id, range));
                     capacity = max_records_in_archive_instance;
                 }
@@ -1828,71 +1829,69 @@ async fn clean_local_ledger_task() {
                 capacity = max_records_in_archive_instance - current_last_archive.1.length;
             }
         }
+    }
 
-        // call_append_transactions
-        if let Some(last_archive) = last_archive {
-            let mut archive_amount = (txn_ledger_size as u128) - settle_to_records;
+    // call_append_transactions
+    if let Some(last_archive) = last_archive {
+        let mut archive_amount = (txn_ledger_size as u128) - settle_to_records;
 
-            if archive_amount > capacity {
-                is_recall_at_end = true;
-                archive_amount = capacity;
-            }
-
-            if archive_amount > max_records_to_archive {
-                is_recall_at_end = true;
-                archive_amount = max_records_to_archive;
-            }
-
-            let to_archive: BTreeMap<u128, Transaction> = STATE.with(|s| {
-                s.borrow_mut()
-                    .get_archive_txn_ledger(archive_amount as usize)
-            });
-
-            let mut to_archive_vec = Vec::new();
-            let mut to_archive_ids = Vec::new();
-            for (key_id, transaction) in to_archive.iter() {
-                to_archive_vec.push(transaction.block.clone().unwrap());
-                to_archive_ids.push(key_id.clone());
-            }
-            let to_archive_amount = to_archive_vec.len() as u128;
-
-            ic_cdk::println!(
-                "clean_local_ledger_task: to_archive size {}",
-                to_archive_amount
-            );
-
-            let call_result = call_append_transactions(last_archive.0, to_archive_vec).await;
-            match call_result {
-                Ok(_count) => {
-                    STATE.with(|s| s.borrow_mut().remove_txn_logs(&to_archive_ids));
-                    STATE.with(|s| {
-                        s.borrow_mut().archive_ledger_info.first_index += to_archive_amount
-                    });
-                    STATE.with(|s| {
-                        if let Some(transaction_range) = s
-                            .borrow_mut()
-                            .archive_ledger_info
-                            .archives
-                            .get_mut(&last_archive.0)
-                        {
-                            transaction_range.length += to_archive_amount;
-                            transaction_range.start = transaction_range.start;
-                        }
-                    });
-                }
-                Err(_) => {
-                    STATE.with(|s: &RefCell<State>| {
-                        s.borrow_mut().archive_ledger_info.is_cleaning = false
-                    });
-                    ic_cdk::println!("clean_local_ledger_task: to_archive fail");
-                }
-            }
+        if archive_amount > capacity {
+            is_recall_at_end = true;
+            archive_amount = capacity;
         }
 
-        STATE.with(|s: &RefCell<State>| s.borrow_mut().archive_ledger_info.is_cleaning = false);
-
-        if is_recall_at_end {
-            set_clean_up_timer()
+        if archive_amount > max_records_to_archive {
+            is_recall_at_end = true;
+            archive_amount = max_records_to_archive;
         }
+
+        let to_archive: BTreeMap<u128, Transaction> = STATE.with(|s| {
+            s.borrow_mut()
+                .get_archive_txn_ledger(archive_amount as usize)
+        });
+
+        let mut to_archive_vec = Vec::new();
+        let mut to_archive_ids = Vec::new();
+        for (key_id, transaction) in to_archive.iter() {
+            to_archive_vec.push(transaction.block.clone().unwrap());
+            to_archive_ids.push(key_id.clone());
+        }
+        let to_archive_amount = to_archive_vec.len() as u128;
+
+        ic_cdk::println!(
+            "clean_local_ledger_task: to_archive size {}",
+            to_archive_amount
+        );
+
+        let call_result = call_append_transactions(last_archive.0, to_archive_vec).await;
+        match call_result {
+            Ok(_count) => {
+                STATE.with(|s| s.borrow_mut().remove_txn_logs(&to_archive_ids));
+                STATE.with(|s| s.borrow_mut().archive_ledger_info.first_index += to_archive_amount);
+                STATE.with(|s| {
+                    if let Some(transaction_range) = s
+                        .borrow_mut()
+                        .archive_ledger_info
+                        .archives
+                        .get_mut(&last_archive.0)
+                    {
+                        transaction_range.length += to_archive_amount;
+                        transaction_range.start = transaction_range.start;
+                    }
+                });
+            }
+            Err(_) => {
+                STATE.with(|s: &RefCell<State>| {
+                    s.borrow_mut().archive_ledger_info.is_cleaning = false
+                });
+                ic_cdk::println!("clean_local_ledger_task: to_archive fail");
+            }
+        }
+    }
+
+    STATE.with(|s: &RefCell<State>| s.borrow_mut().archive_ledger_info.is_cleaning = false);
+
+    if is_recall_at_end {
+        set_clean_up_timer()
     }
 }
