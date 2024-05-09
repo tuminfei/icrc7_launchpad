@@ -26,12 +26,8 @@ pub fn icrc3_get_tip_certificate() -> Option<DataCertificate> {
 
 // Get icrc3 blocks information
 #[query]
-pub fn icrc3_get_blocks(_arg: GetBlocksArgs) -> GetBlocksResult {
-    return GetBlocksResult {
-        blocks: vec![],
-        log_length: 0,
-        archived_blocks: vec![],
-    };
+pub fn icrc3_get_blocks(args: GetBlocksArgs) -> GetBlocksResult {
+    STATE.with(|s| s.borrow().icrc3_get_blocks(args))
 }
 
 // Returns the latest hash and lastest index along with a witness

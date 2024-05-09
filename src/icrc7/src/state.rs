@@ -14,8 +14,9 @@ use crate::{
         TransferFromResult, UserAccount,
     },
     icrc3_types::{
-        ArchiveCreateArgs, ArchiveLedgerInfo, Block, GetArchiveArgs, GetArchivesResultItem, Tip,
-        TransactionRange,
+        ArchiveCreateArgs, ArchiveLedgerInfo, ArchivedTransactionResponse, Block, GetArchiveArgs,
+        GetArchivesResultItem, GetBlocksArgs, GetBlocksResult, QueryBlock, QueryTransactionsFn,
+        Tip, TransactionRange,
     },
     icrc7_types::{
         BurnResult, Icrc7TokenMetadata, MintArg, MintResult, Transaction, TransactionType,
@@ -1544,6 +1545,113 @@ impl State {
             certificate: certificate_buf,
             hash_tree: ByteBuf::from(witness),
         });
+    }
+
+    pub fn icrc3_get_blocks(&self, args: GetBlocksArgs) -> GetBlocksResult {
+        let local_ledger_length = self.txn_ledger.len() as u128;
+        let local_first_index = self.archive_ledger_info.first_index;
+        let local_last_index = self.archive_ledger_info.last_index;
+        let mut local_blocks: Vec<QueryBlock> = vec![];
+        let mut archived_blocks: BTreeMap<Principal, ArchivedTransactionResponse> = BTreeMap::new();
+
+        //get the transactions on this canister
+        for arg in args.clone() {
+            if arg.start + arg.length > local_first_index {
+                let start = if arg.start <= local_first_index {
+                    0
+                } else {
+                    arg.start - local_first_index
+                };
+
+                let end = if local_ledger_length == 0 {
+                    0
+                } else if arg.start + arg.length >= local_first_index {
+                    local_ledger_length - 1
+                } else {
+                    local_last_index
+                        - local_first_index
+                        - (local_last_index - (arg.start + arg.length))
+                };
+
+                if local_ledger_length > 0 {
+                    for this_item in start..=end {
+                        let tx_id = local_first_index + this_item;
+                        let block_info = self.txn_ledger.get(&tx_id).unwrap().block.unwrap();
+                        if this_item >= local_ledger_length {
+                            break;
+                        }
+                        local_blocks.push(QueryBlock {
+                            id: tx_id,
+                            block: block_info.into_inner(),
+                        });
+                    }
+                }
+            }
+        }
+
+        //get any archive transactions
+        for arg in args {
+            let mut seeking = arg.start;
+            for (key, tran_range) in &self.archive_ledger_info.archives {
+                if (seeking > tran_range.start + tran_range.length - 1)
+                    || (arg.start + arg.length <= tran_range.start)
+                {
+                    continue;
+                };
+
+                // Calculate the start and end indices of the intersection between the requested range and the current archive.
+                let overlap_start = std::cmp::max(seeking, tran_range.start);
+                let overlap_end = std::cmp::min(
+                    arg.start + arg.length - 1,
+                    tran_range.start + tran_range.length - 1,
+                );
+                let overlap_length = overlap_end - overlap_start + 1;
+
+                match archived_blocks.get_mut(key) {
+                    Some(archive) => {
+                        archive.args.push(TransactionRange {
+                            start: overlap_start,
+                            length: overlap_length,
+                        });
+                    }
+                    None => {
+                        archived_blocks.insert(
+                            *key,
+                            ArchivedTransactionResponse {
+                                args: vec![TransactionRange {
+                                    start: overlap_start,
+                                    length: overlap_length,
+                                }],
+                                callback: QueryTransactionsFn {
+                                    canister_id: *key,
+                                    method: "get_transactions".to_string(),
+                                    _marker: std::marker::PhantomData,
+                                },
+                            },
+                        );
+                    }
+                }
+
+                // If the overlap ends exactly where the requested range ends, break out of the loop.
+                if overlap_end == arg.start + arg.length - 1 {
+                    break;
+                };
+
+                // Update seeking to the next desired transaction.
+                seeking = overlap_end + 1;
+            }
+        }
+
+        let archived_blocks_vec: Vec<ArchivedTransactionResponse> = archived_blocks
+            .into_iter()
+            .map(|(_, value)| value)
+            .collect();
+
+        return GetBlocksResult {
+            blocks: local_blocks,
+            log_length: 0,
+            archived_blocks: archived_blocks_vec,
+        };
     }
 
     pub fn icrc3_get_archives(&self, arg: GetArchiveArgs) -> Vec<GetArchivesResultItem> {
