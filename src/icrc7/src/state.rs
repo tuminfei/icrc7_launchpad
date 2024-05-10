@@ -1439,7 +1439,7 @@ impl State {
         let mut metadata_list = vec![None; token_ids.len()];
         for (index, tid) in token_ids.iter().enumerate() {
             if let Some(ref token) = self.tokens.get(tid) {
-                metadata_list.insert(index, Some(token.token_metadata()))
+                metadata_list[index] = Some(token.token_metadata());    
             }
         }
         metadata_list
@@ -1665,7 +1665,7 @@ impl State {
 
         if is_found {
             results.push(GetArchivesResultItem {
-                canister_id: canister_id,
+                canister_id,
                 start: self.archive_ledger_info.first_index,
                 end: self.archive_ledger_info.last_index,
             })
