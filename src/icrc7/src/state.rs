@@ -1697,6 +1697,9 @@ impl State {
     }
 
     pub fn icrc3_get_tip(&self) -> Tip {
+        if self.archive_ledger_info.latest_hash.is_none() {
+            ic_cdk::trap("No root")
+        }
         let witness = TREE.with(|tree| {
             let tree = tree.borrow();
             let mut witness = vec![];
