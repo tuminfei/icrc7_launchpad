@@ -613,6 +613,7 @@ impl State {
         );
         let token_metadata = token.token_metadata();
         self.tokens.insert(arg.token_id, token);
+        self.icrc7_total_supply += 1;
         self.next_token_id = arg.token_id + 1;
 
         let txn_id = self.log_transaction(
