@@ -78,7 +78,19 @@ pub fn icrc7_owner_of(ids: Vec<u128>) -> Vec<Option<Account>> {
 pub fn icrc7_supported_standards() -> Vec<Standard> {
     vec![Standard {
         name: "ICRC-7".into(),
-        url: "https://github.com/dfinity/ICRC/ICRCs/ICRC-7".into(),
+        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-7".into(),
+    },
+    Standard {
+        name: "ICRC-10".into(),
+        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-10".into(),
+    },
+    Standard {
+        name: "ICRC-37".into(),
+        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-37".into(),
+    },
+    Standard {
+        name: "ICRC-3".into(),
+        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-3".into(),
     }]
 }
 
