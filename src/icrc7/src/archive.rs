@@ -61,6 +61,8 @@ pub async fn create_archive_canister(arg: ArchiveCreateArgs) -> Result<Principal
         Err((code, msg)) => return Err(format!("Rejection Code: {:?}, Message: {:?}", code, msg)),
         Ok((principal,)) => principal.canister_id,
     };
+    ic_cdk::println!("new archive canister: {}", principal);
+
     let init_arg = ArchiveInitArgs::new(arg.max_pages, arg.max_records, arg.first_index);
     let init_arg = Encode!(&init_arg).unwrap();
     match install_code(InstallCodeArgument {
