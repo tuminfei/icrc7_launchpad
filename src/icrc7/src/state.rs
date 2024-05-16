@@ -317,8 +317,9 @@ impl State {
     }
 
     fn get_txn_id(&mut self) -> u128 {
+        let tx_id = self.txn_count;
         self.txn_count += 1;
-        self.txn_count
+        tx_id
     }
 
     fn log_transaction(
@@ -1439,7 +1440,7 @@ impl State {
         let mut metadata_list = vec![None; token_ids.len()];
         for (index, tid) in token_ids.iter().enumerate() {
             if let Some(ref token) = self.tokens.get(tid) {
-                metadata_list[index] = Some(token.token_metadata());    
+                metadata_list[index] = Some(token.token_metadata());
             }
         }
         metadata_list

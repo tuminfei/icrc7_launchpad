@@ -100,3 +100,20 @@ approval_init= null;
 archive_init= null
 })'
 ```
+
+#### Minting NFT
+
+```bash
+dfx canister call icrc7 icrc7_mint '(record{                                  
+to= record {
+    owner = principal "3yyxm-t5fpe-v32em-ac6lr-xyort-wuscb-dvl4x-3wnwi-hqkyj-xortw-oqe";                                     
+    subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+  };          
+token_id=1;
+memo= null;
+from_subaccount= null;                  
+token_description= opt "Token Number 1";
+token_logo= null;
+token_name= null
+})'
+```
