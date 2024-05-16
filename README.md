@@ -101,6 +101,39 @@ archive_init= null
 })'
 ```
 
+```bash
+dfx deploy icrc7 --argument '(record{                                  
+minting_account= opt record {
+        owner = principal "3yyxm-t5fpe-v32em-ac6lr-xyort-wuscb-dvl4x-3wnwi-hqkyj-xortw-oqe";                                     
+        subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+    };                  
+icrc7_supply_cap= null;
+icrc7_description= opt "ICP Flower Collection";
+tx_window= null;                        
+permitted_drift= null;                  
+icrc7_max_take_value= null;
+icrc7_max_memo_size= null;
+icrc7_symbol= "ICFL";
+icrc7_max_update_batch_size= null;
+icrc7_max_query_batch_size= null;
+icrc7_atomic_batch_transfers= null;
+icrc7_default_take_value= null;
+icrc7_logo= null;
+icrc7_name= "ICP Flower";
+approval_init= null;
+archive_init= opt record {
+        maxRecordsToArchive= 2;
+        archiveIndexType= variant {Stable};
+        maxArchivePages= 3;
+        settleToRecords= 2;
+        archiveCycles= 10000000000000;
+        maxActiveRecords= 4;
+        maxRecordsInArchiveInstance= 4;
+        archiveControllers= null
+    }
+})'
+```
+
 #### Minting NFT
 
 ```bash
