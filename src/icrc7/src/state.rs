@@ -1553,6 +1553,13 @@ impl State {
         let local_ledger_length = self.txn_ledger.len() as u128;
         let local_first_index = self.archive_ledger_info.first_index;
         let local_last_index = self.archive_ledger_info.last_index;
+
+        let ledger_length = if local_last_index == 0 && local_ledger_length == 0 {
+            0
+        } else {
+            local_last_index + 1
+        };
+
         let mut local_blocks: Vec<QueryBlock> = vec![];
         let mut archived_blocks: BTreeMap<Principal, ArchivedTransactionResponse> = BTreeMap::new();
 
@@ -1651,7 +1658,7 @@ impl State {
 
         return GetBlocksResult {
             blocks: local_blocks,
-            log_length: 0,
+            log_length: ledger_length,
             archived_blocks: archived_blocks_vec,
         };
     }
