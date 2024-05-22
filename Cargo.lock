@@ -420,6 +420,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "icrc7_archive"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "ciborium",
+ "ic-cdk",
+ "ic-cdk-macros",
+ "ic-stable-structures",
+ "icrc-ledger-types",
+ "num-bigint",
+ "num-traits",
+ "serde",
+ "serde_bytes",
+ "serde_derive",
+]
+
+[[package]]
 name = "icrc7_launchpad"
 version = "0.1.0"
 dependencies = [

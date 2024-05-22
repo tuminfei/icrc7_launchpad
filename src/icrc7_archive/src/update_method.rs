@@ -23,9 +23,9 @@ fn append_blocks(new_blocks: Vec<Block>) {
     for block in new_blocks {
         block_index = block_index + 1;
         BLOCK_MAP.with(|p| {
-            p.borrow_mut()
-                .insert(block_index, block)
-                .unwrap_or_else(|| ic_cdk::api::trap("no space left"))
+            let mut block_map = p.borrow_mut();
+
+            block_map.insert(block_index, block)
         });
     }
 

@@ -1,7 +1,8 @@
 use crate::types::{Block, IndexType};
-use candid::{Decode, Encode, Principal};
+use candid::{CandidType, Decode, Encode, Principal};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{storable::Bound, DefaultMemoryImpl, StableBTreeMap, Storable};
+use serde::Deserialize;
 use std::cell::RefCell;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -31,7 +32,7 @@ impl Storable for Block {
     const BOUND: Bound = Bound::Unbounded;
 }
 
-#[derive(Debug)]
+#[derive(CandidType, Deserialize, Debug)]
 pub struct State {
     pub max_records: u128,
     pub max_pages: u128,
@@ -40,6 +41,11 @@ pub struct State {
     pub ledger_id: Principal,
     pub block_index_offset: u128,
     pub block_index: u128,
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct StableState {
+    pub state: State,
 }
 
 impl Default for State {
