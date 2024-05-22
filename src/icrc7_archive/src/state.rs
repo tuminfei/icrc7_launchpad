@@ -77,30 +77,7 @@ pub fn with_blocks<R>(f: impl FnOnce(&StableBTreeMap<u128, Block, Memory>) -> R)
     BLOCK_MAP.with(|cell| f(&cell.borrow()))
 }
 
-/// A helper function to access the block list.
-pub fn with_mut_blocks<R>(f: impl FnOnce(&StableBTreeMap<u128, Block, Memory>) -> R) -> R {
-    BLOCK_MAP.with(|cell| f(&cell.borrow_mut()))
-}
-
 /// A helper function to access the configuration.
 pub fn with_archive_opts<R>(f: impl FnOnce(&State) -> R) -> R {
     STATE.with(|cell| f(&cell.borrow()))
 }
-
-// impl State {
-//     pub fn page_txn_logs(&self, page_number: u32, page_size: u32) -> Vec<Block> {
-//         let offset = (page_number - 1) * page_size;
-//         if offset as u128 > self.txn_count {
-//             ic_cdk::trap("Exceeds Max Offset Value")
-//         }
-
-//         BLOCK_MAP.with(|p| {
-//             p.borrow()
-//                 .iter()
-//                 .skip(offset as usize)
-//                 .take(page_size as usize)
-//                 .map(|(_, txn)| txn.clone())
-//                 .collect()
-//         })
-//     }
-// }

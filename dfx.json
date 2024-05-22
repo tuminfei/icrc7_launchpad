@@ -10,6 +10,11 @@
       "package": "icrc7",
       "type": "rust"
     },
+    "icrc7_archive": {
+      "candid": "src/icrc7_archive/icrc7_archive.did",
+      "package": "icrc7_archive",
+      "type": "rust"
+    },
     "archive": {
       "candid": "src/archive/archive.did",
       "type": "custom",

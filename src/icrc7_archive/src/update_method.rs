@@ -3,7 +3,7 @@ use ic_cdk_macros::update;
 
 use crate::{
     guards::owner_guard,
-    state::{with_archive_opts, with_mut_blocks, BLOCK_MAP, STATE},
+    state::{with_archive_opts, with_blocks, BLOCK_MAP, STATE},
     types::Block,
 };
 
@@ -13,7 +13,7 @@ fn append_blocks(new_blocks: Vec<Block>) {
     let max_records = with_archive_opts(|opts| opts.max_records);
     let mut block_index = with_archive_opts(|opts| opts.block_index);
 
-    with_mut_blocks(|blocks| {
+    with_blocks(|blocks| {
         let new_blocks_size = new_blocks.len() as u128;
         if max_records < (blocks.len() as u128).saturating_add(new_blocks_size) {
             ic_cdk::api::trap("no space left");
