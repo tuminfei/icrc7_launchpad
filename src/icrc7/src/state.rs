@@ -1788,17 +1788,18 @@ pub async fn call_sync_logs(
     }
 }
 
-async fn call_append_transactions(
-    archive_log_canister: Principal,
-    blocks: Vec<Block>,
-) -> SyncReceipt {
+async fn call_append_blocks(archive_log_canister: Principal, blocks: Vec<Block>) -> SyncReceipt {
     // sync logs
-    let call_result: Result<(SyncReceipt,), _> = ic_cdk::api::call::call(
-        archive_log_canister,
-        "append_transactions",
-        (blocks.clone(),),
-    )
-    .await;
+    ic_cdk::println!("call_append: {:?}", blocks);
+
+    ic_cdk::println!(
+        "append_blocks archive_log_canister: {:?}",
+        archive_log_canister.to_text()
+    );
+    let call_result: Result<(), _> =
+        ic_cdk::api::call::call(archive_log_canister, "append_blocks", (blocks.clone(),)).await;
+
+    // ic_cdk::println!("call_append_blocks call_result: {:?}", call_result);
 
     match call_result {
         Ok(_) => Ok(blocks.len() as u32),
@@ -1808,7 +1809,7 @@ async fn call_append_transactions(
 
 fn set_clean_up_timer() {
     // set Timer
-    let secs = Duration::from_secs(0);
+    let secs = Duration::from_secs(10);
     let clean_task = async {
         clean_local_ledger_task().await;
     };
@@ -1861,6 +1862,8 @@ async fn clean_local_ledger_task() {
             first_index: 0,
             controllers: archive_controllers,
         };
+        // ic_cdk::println!("local_cycles: {}", local_cycles);
+        // ic_cdk::println!("archive_cycles: {}", archive_cycles);
 
         if local_cycles > (archive_cycles * 2) {
             let archive_canister: Result<Principal, String> =
@@ -1983,7 +1986,8 @@ async fn clean_local_ledger_task() {
             to_archive_amount
         );
 
-        let call_result = call_append_transactions(last_archive.0, to_archive_vec).await;
+        let call_result = call_append_blocks(last_archive.0, to_archive_vec).await;
+
         match call_result {
             Ok(_count) => {
                 STATE.with(|s| s.borrow_mut().remove_txn_logs(&to_archive_ids));

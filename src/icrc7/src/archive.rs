@@ -7,19 +7,16 @@ use serde::Serialize;
 
 use crate::icrc3_types::{ArchiveCreateArgs, IndexType};
 
-pub const ARCHIVE_WASM: &[u8] = std::include_bytes!("./../../archive/archive.wasm.gz");
+pub const ARCHIVE_WASM: &[u8] =
+    std::include_bytes!("./../../icrc7_archive/wasm/icrc7_archive.wasm.gz");
 
 pub const ARCHIVE_DEFAULT_CYCLES: u128 = 10_000_000_000_000;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct ArchiveInitArgs {
-    #[serde(rename = "firstIndex")]
     pub first_index: u128,
-    #[serde(rename = "indexType")]
     pub index_type: IndexType,
-    #[serde(rename = "maxPages")]
     pub max_pages: u128,
-    #[serde(rename = "maxRecords")]
     pub max_records: u128,
 }
 
