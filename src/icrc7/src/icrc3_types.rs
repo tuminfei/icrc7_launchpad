@@ -27,6 +27,16 @@ impl Storable for Block {
     const BOUND: Bound = Bound::Unbounded;
 }
 
+impl Block {
+    pub fn value(&self) -> &Value {
+        &self.0
+    }
+
+    pub fn value_mut(&mut self) -> &mut Value {
+        &mut self.0
+    }
+}
+
 impl AsRef<Value> for Block {
     #[inline]
     fn as_ref(&self) -> &Value {
