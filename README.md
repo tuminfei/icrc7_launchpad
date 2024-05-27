@@ -187,6 +187,22 @@ dfx canister call icrc7 icrc37_approve_tokens '(vec{
   }
 }     
 })'
+
+dfx canister call icrc7 icrc37_approve_collection '(vec{ 
+  record{
+    token_id= 2;                               
+    approval_info= record {
+      memo= null;
+      from_subaccount= null;
+      created_at_time= null;
+      expires_at= null;
+      spender= record {
+          owner = principal "o2zom-piy75-ifbnk-nhhlq-362su-4vsx5-ptl2s-ec4jw-osbv4-nygtw-dae";                                     
+          subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+      }
+  }
+}     
+})'
 ```
 
 #### Transfer From NFT
