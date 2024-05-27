@@ -55,9 +55,35 @@ created_at_time= null
 }
 })'
 
+dfx canister call icrc7 icrc7_mint '(record{                                  
+to= record {
+    owner = principal "3yyxm-t5fpe-v32em-ac6lr-xyort-wuscb-dvl4x-3wnwi-hqkyj-xortw-oqe";                                     
+    subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+  };          
+token_id=2;
+memo= null;
+from_subaccount= null;                  
+token_description= opt "Token Number 1";
+token_logo= null;
+token_name= null
+})'
+
+dfx canister call icrc7 icrc7_transfer '(vec{
+    record{
+        to= record {
+            owner = principal "t4egw-clf4w-qbpli-svryg-7yqq6-jt2yj-7v755-mabir-zmx6i-vp4fr-fqe";                                     
+            subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+        };
+        token_id= 2;
+        memo= opt blob "123";
+        from_subaccount= null;
+        created_at_time= null
+    }
+})'
+
 dfx canister call icrc7 icrc37_approve_tokens '(vec{ 
     record{
-        token_id= 1;                               
+        token_id= 2;                               
         approval_info= record {
             memo= null;
             from_subaccount= null;
@@ -69,4 +95,21 @@ dfx canister call icrc7 icrc37_approve_tokens '(vec{
             }
     } 
 }     
+})'
+
+dfx canister call icrc7 icrc37_transfer_from '(vec{
+    record{
+        from= record {
+            owner = principal "3yyxm-t5fpe-v32em-ac6lr-xyort-wuscb-dvl4x-3wnwi-hqkyj-xortw-oqe";                                     
+            subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+        };
+        to= record {
+            owner = principal "t4egw-clf4w-qbpli-svryg-7yqq6-jt2yj-7v755-mabir-zmx6i-vp4fr-fqe";                                     
+            subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+        };
+        spender_subaccount= null;
+        token_id= 2;
+        memo= opt blob "123";
+        created_at_time= null
+    }
 })'
