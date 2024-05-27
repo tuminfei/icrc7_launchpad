@@ -150,3 +150,61 @@ token_logo= null;
 token_name= null
 })'
 ```
+
+
+#### Transfer NFT
+
+```bash
+dfx canister call icrc7 icrc7_transfer '(vec{
+  record{
+    to=record {
+      owner = principal "t4egw-clf4w-qbpli-svryg-7yqq6-jt2yj-7v755-mabir-zmx6i-vp4fr-fqe";
+      subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+    };
+    token_id= 1;
+    from_subaccount= null;
+    memo= null;
+    created_at_time= null
+  }
+})'
+```
+
+#### Approve NFT
+
+```bash
+dfx canister call icrc7 icrc37_approve_tokens '(vec{ 
+  record{
+    token_id= 2;                               
+    approval_info= record {
+      memo= null;
+      from_subaccount= null;
+      created_at_time= null;
+      expires_at= null;
+      spender= record {
+          owner = principal "o2zom-piy75-ifbnk-nhhlq-362su-4vsx5-ptl2s-ec4jw-osbv4-nygtw-dae";                                     
+          subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+      }
+  }
+}     
+})'
+```
+
+#### Transfer From NFT
+
+```bash
+dfx canister call icrc7 icrc37_approve_tokens '(vec{ 
+  record{
+    token_id= 2;                               
+    approval_info= record {
+      memo= null;
+      from_subaccount= null;
+      created_at_time= null;
+      expires_at= null;
+      spender= record {
+          owner = principal "o2zom-piy75-ifbnk-nhhlq-362su-4vsx5-ptl2s-ec4jw-osbv4-nygtw-dae";                                     
+          subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
+      }
+  }
+}     
+})'
+```
