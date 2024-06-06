@@ -2,6 +2,7 @@
 members = [
     "src/icrc7_launchpad",
     "src/icrc7",
-    "src/icrc7_archive"
+    "src/icrc7_archive",
+    "src/icrc_nft_types"
 ]
 resolver = "2"

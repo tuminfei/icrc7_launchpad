@@ -400,6 +400,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "icrc-nft-types"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "ic-stable-structures",
+ "icrc-ledger-types",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "icrc7"
 version = "0.1.0"
 dependencies = [
