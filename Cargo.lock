@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = " icrc7-types"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "ic-stable-structures",
+ "icrc-ledger-types",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -397,17 +408,6 @@ dependencies = [
  "serde",
  "serde_bytes",
  "sha2",
-]
-
-[[package]]
-name = "icrc-nft-types"
-version = "0.1.0"
-dependencies = [
- "candid",
- "ic-stable-structures",
- "icrc-ledger-types",
- "serde",
- "serde_bytes",
 ]
 
 [[package]]
