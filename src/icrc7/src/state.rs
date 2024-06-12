@@ -1460,12 +1460,16 @@ impl State {
     }
 
     pub fn icrc7_tokens(&self, prev: Option<u128>, take: Option<u128>) -> Vec<u128> {
-        let take = take.unwrap_or(State::DEFAULT_TAKE_VALUE);
+        let mut take = take.unwrap_or(State::DEFAULT_TAKE_VALUE);
         if take > State::DEFAULT_MAX_TAKE_VALUE {
             ic_cdk::trap("Exceeds Max Take Value")
         }
+
         let mut list: Vec<u128> = self.tokens.iter().map(|(k, _)| k).collect();
         list.sort();
+
+        take = std::cmp::min(take, list.len() as u128);
+
         match prev {
             Some(prev) => match list.iter().position(|id| *id == prev) {
                 None => vec![],
