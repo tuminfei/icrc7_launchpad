@@ -91,7 +91,7 @@ impl Icrc7Token {
             metadata.insert("Description".into(), Value::Text(description.clone()));
         }
         if let Some(ref logo) = self.token_logo {
-            metadata.insert("logo".into(), Value::Text(logo.clone()));
+            metadata.insert("Logo".into(), Value::Text(logo.clone()));
         }
         metadata
     }
