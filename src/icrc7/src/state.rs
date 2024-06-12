@@ -235,7 +235,7 @@ impl State {
         let mut res = vec![None; token_id.len()];
         for (index, id) in token_id.iter().enumerate() {
             if let Some(ref token) = self.tokens.get(id) {
-                res.insert(index, Some(token.token_owner))
+                res[index] = Some(token.token_owner);
             }
         }
         res
