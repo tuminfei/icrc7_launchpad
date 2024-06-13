@@ -1461,7 +1461,7 @@ impl State {
 
     pub fn icrc7_tokens(&self, prev: Option<u128>, take: Option<u128>) -> Vec<u128> {
         let mut take = take.unwrap_or(State::DEFAULT_TAKE_VALUE);
-        if take > State::DEFAULT_MAX_TAKE_VALUE {
+        if take > self.icrc7_max_take_value().unwrap() {
             ic_cdk::trap("Exceeds Max Take Value")
         }
 
