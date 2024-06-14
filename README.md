@@ -137,7 +137,7 @@ archive_init= opt record {
 #### Minting NFT
 
 ```bash
-dfx canister call icrc7 icrc7_mint '(record{                                  
+dfx canister call icrc7 mint '(record{                                  
 to= record {
     owner = principal "3yyxm-t5fpe-v32em-ac6lr-xyort-wuscb-dvl4x-3wnwi-hqkyj-xortw-oqe";                                     
     subaccount = opt blob "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00";
