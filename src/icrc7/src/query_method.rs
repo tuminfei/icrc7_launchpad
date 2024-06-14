@@ -35,11 +35,6 @@ pub fn icrc7_supply_cap() -> Option<u128> {
 }
 
 #[query]
-pub fn icrc7_minting_authority() -> Option<Account> {
-    STATE.with(|s| s.borrow().icrc7_minting_authority())
-}
-
-#[query]
 pub fn icrc7_max_query_batch_size() -> Option<u16> {
     STATE.with(|s| s.borrow().icrc7_max_query_batch_size())
 }
@@ -76,27 +71,24 @@ pub fn icrc7_owner_of(ids: Vec<u128>) -> Vec<Option<Account>> {
 
 #[query]
 pub fn icrc7_supported_standards() -> Vec<Standard> {
-    vec![Standard {
-        name: "ICRC-7".into(),
-        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-7".into(),
-    },
-    Standard {
-        name: "ICRC-10".into(),
-        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-10".into(),
-    },
-    Standard {
-        name: "ICRC-37".into(),
-        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-37".into(),
-    },
-    Standard {
-        name: "ICRC-3".into(),
-        url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-3".into(),
-    }]
-}
-
-#[query]
-pub fn icrc7_archive_log_canister() -> Option<Principal> {
-    STATE.with(|s| s.borrow().get_archive_log_canister())
+    vec![
+        Standard {
+            name: "ICRC-7".into(),
+            url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-7".into(),
+        },
+        Standard {
+            name: "ICRC-10".into(),
+            url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-10".into(),
+        },
+        Standard {
+            name: "ICRC-37".into(),
+            url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-37".into(),
+        },
+        Standard {
+            name: "ICRC-3".into(),
+            url: "https://github.com/dfinity/ICRC/tree/main/ICRCs/ICRC-3".into(),
+        },
+    ]
 }
 
 #[query]
@@ -120,6 +112,16 @@ pub fn icrc7_tokens_of(account: Account, prev: Option<u128>, take: Option<u128>)
 }
 
 #[query]
-pub fn icrc7_txn_logs(page_number: u32, page_size: u32) -> Vec<Transaction> {
+pub fn minting_authority() -> Option<Account> {
+    STATE.with(|s| s.borrow().icrc7_minting_authority())
+}
+
+#[query]
+pub fn txn_logs(page_number: u32, page_size: u32) -> Vec<Transaction> {
     STATE.with(|s| s.borrow().icrc7_txn_logs(page_number, page_size))
+}
+
+#[query]
+pub fn archive_log_canister() -> Option<Principal> {
+    STATE.with(|s| s.borrow().get_archive_log_canister())
 }
