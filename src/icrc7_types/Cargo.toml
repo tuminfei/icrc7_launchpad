@@ -1,5 +1,5 @@
 [package]
-name = " icrc7-types"
+name = "icrc7-types"
 version = "0.1.0"
 authors = ["Terry.Tu <tuminfei1981@gmail.com>"]
 edition = "2021"
