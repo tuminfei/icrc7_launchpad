@@ -87,13 +87,13 @@ icrc7_supply_cap= null;
 icrc7_description= opt "ICP Flower Collection";
 tx_window= null;                        
 permitted_drift= null;                  
-icrc7_max_take_value= null;
-icrc7_max_memo_size= null;
+icrc7_max_take_value= opt 100;
+icrc7_max_memo_size= opt 1000;
 icrc7_symbol= "ICFL";
-icrc7_max_update_batch_size= null;
-icrc7_max_query_batch_size= null;
+icrc7_max_update_batch_size= opt 100;
+icrc7_max_query_batch_size= opt 100;
 icrc7_atomic_batch_transfers= null;
-icrc7_default_take_value= null;
+icrc7_default_take_value= opt 100;
 icrc7_logo= null;
 icrc7_name= "ICP Flower";
 approval_init= null;
@@ -222,6 +222,20 @@ dfx canister call icrc7 icrc37_transfer_from '(vec{
     token_id= 2;
     memo= opt blob "123";
     created_at_time= null
+  }
+})'
+```
+
+#### Burn NFT
+
+The implementation of the burn method does not delete the token; rather, it transfers the token to a burn_address (akin to a zero address).
+
+```bash
+dfx canister call icrc7 burn '(vec {
+  record {
+    token_id = 1 : nat;
+    memo = opt blob "Burning token 1";
+    from_subaccount = null
   }
 })'
 ```
