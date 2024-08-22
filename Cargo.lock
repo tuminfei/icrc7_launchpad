@@ -453,6 +453,10 @@ version = "0.1.0"
 dependencies = [
  "candid",
  "ic-cdk",
+ "ic-cdk-macros",
+ "icrc-ledger-types",
+ "icrc7-types",
+ "serde",
 ]
 
 [[package]]

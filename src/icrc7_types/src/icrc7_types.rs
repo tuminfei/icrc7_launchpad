@@ -281,11 +281,11 @@ impl Transaction {
             TransactionType::ApproveCollection { from, to, exp_sec } => {
                 Self::approve_collection(at, from.clone(), to.clone(), exp_sec.clone(), memo)
             }
-            TransactionType::Revoke { tid, from, to } => {
-                Self::revoke(at, tid.clone(), from.clone(), to.clone(), memo)
+            TransactionType::Revoke { tid, from, to: _ } => {
+                Self::revoke(at, tid.clone(), from.clone(), None, memo)
             }
-            TransactionType::RevokeCollection { from, to } => {
-                Self::revoke_collection(at, from.clone(), to.clone(), memo)
+            TransactionType::RevokeCollection { from, to: _ } => {
+                Self::revoke_collection(at, from.clone(), None, memo)
             }
             TransactionType::TransferFrom {
                 tid,
