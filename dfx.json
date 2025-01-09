@@ -1,5 +1,12 @@
 {
   "canisters": {
+    "asset_storage": {
+      "candid": "wasm/assetstorage.did",
+      "init_arg": "opt variant { Init = record {} }",
+      "package": "asset_storage",
+      "type": "custom",
+      "wasm": "wasm/assetstorage.wasm.gz"
+    },
     "icrc7_launchpad": {
       "candid": "src/icrc7_launchpad/icrc7_launchpad.did",
       "package": "icrc7_launchpad",
