@@ -1,6 +1,46 @@
 # icrc7_launchpad
 
-## Init
+**ICRC7 Launchpad** is a powerful tool designed to streamline the creation of ICRC7 NFT canisters. With the **ICRC7 Launchpad**, users can easily deploy ICRC7-based NFT canisters tailored to their needs by simply modifying the `icrc7_launchpad.sh` script.
+
+## Key Components
+
+1. **ICRC7 Launchpad**:  
+   A canister-based launcher that simplifies the deployment of ICRC7 NFT canisters. It abstracts the complexities of configuration and setup, enabling users to focus on their projects.
+
+2. **ICRC7**:  
+   The core ICRC canister contract code. This serves as the foundation for ICRC7-based NFTs, providing essential functionality for token operations.
+
+3. **ICRC7 Types**:  
+   A dedicated type library for ICRC7. This library defines the structures and data types required to interact with ICRC7 canisters, ensuring consistency and ease of integration.
+
+## Use Cases
+
+- Launch new NFT collections with ease.
+- Experiment with ICRC7 token features and functionalities.
+- Provide an infrastructure for decentralized applications leveraging NFTs.
+
+## How It Works
+
+1. Modify the `icrc7_launchpad.sh` script to include your desired configuration, such as token name, symbol, metadata, and supply parameters.
+2. Execute the script to deploy a new ICRC7 canister on the Internet Computer.
+3. Interact with the newly created NFT canister using the ICRC7 Types library for seamless integration into your application.
+
+---
+
+Get started with the **ICRC7 Launchpad** and unlock the potential of ICRC7 NFTs on the Internet Computer!
+
+
+```
+
+dfx start --background
+
+dfx deploy icrc7_launchpad
+
+sh icrc7_launchpad.sh
+
+```
+
+## ICRC7 Init
 
 ICRC7 Init args:
 
