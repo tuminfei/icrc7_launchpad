@@ -1,3 +1,40 @@
+type Arg = record {
+  icrc7_supply_cap : opt nat;
+  icrc7_description : opt text;
+  tx_window : opt nat64;
+  icrc7_max_query_batch_size : opt nat16;
+  permitted_drift : opt nat64;
+  archive_init : opt InitArchiveArg;
+  icrc7_max_take_value : opt nat;
+  icrc7_max_memo_size : opt nat32;
+  icrc7_symbol : text;
+  icrc7_max_update_batch_size : opt nat16;
+  icrc7_atomic_batch_transfers : opt bool;
+  approval_init : opt InitApprovalsArg;
+  icrc7_default_take_value : opt nat;
+  icrc7_logo : opt text;
+  icrc7_name : text;
+};
+type IndexType = variant { Stable; StableTyped; Managed };
+type InitApprovalsArg = record {
+  max_approvals : opt nat16;
+  max_approvals_per_token_or_collection : opt nat16;
+  settle_to_approvals : opt nat16;
+  max_revoke_approvals : opt nat16;
+  collection_approval_requires_token : opt bool;
+};
+type InitArchiveArg = record {
+  maxRecordsToArchive : nat;
+  archiveIndexType : IndexType;
+  maxArchivePages : nat;
+  settleToRecords : nat;
+  archiveCycles : nat;
+  maxActiveRecords : nat;
+  maxRecordsInArchiveInstance : nat;
+  archiveControllers : opt opt vec principal;
+};
+type Result = variant { Ok : principal; Err : text };
 service : {
-    "greet": (text) -> (text) query;
+  __get_candid_interface_tmp_hack : () -> (text) query;
+  mint_collection_canister : (Arg) -> (Result);
 }
