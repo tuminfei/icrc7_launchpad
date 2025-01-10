@@ -40,6 +40,32 @@ sh icrc7_launchpad.sh
 
 ```
 
+```bash
+
+#!/bin/bash
+
+ICRC7_LAUNCHPAD_CANISTER_ID="icrc7_launchpad"
+
+# Arguments for the `mint_collection_canister` method
+ARG=$(cat <<EOF
+(
+  record {
+    icrc7_supply_cap = opt 1000000;
+    icrc7_description = opt "An example collection description";
+    tx_window = opt 86400;
+    icrc7_max_query_batch_size = opt 500;
+    ...
+    ...
+  }
+)
+EOF
+)
+
+# Call the canister method
+dfx canister call "$ICRC7_LAUNCHPAD_CANISTER_ID" mint_collection_canister "$ARG"
+
+```
+
 ## Creating Asset Storage and Uploading Assets
 
 The **ICRC7 Launchpad** also supports asset storage for uploading and managing images or files associated with your NFTs. 
