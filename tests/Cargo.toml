@@ -1,0 +1,13 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = "1.0.159"
+sha2 = "0.10.6"
+hex = "0.4.3"
+percent-encoding = "2.2.0"
+regex = "1.6.0"

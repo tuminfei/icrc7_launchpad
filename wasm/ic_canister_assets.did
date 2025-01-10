@@ -1,0 +1,83 @@
+type CanisterStatusResponse = record {
+  status : CanisterStatusType;
+  memory_size : nat;
+  cycles : nat;
+  settings : DefiniteCanisterSettings;
+  idle_cycles_burned_per_day : nat;
+  module_hash : opt vec nat8;
+};
+type CanisterStatusType = variant { stopped; stopping; running };
+type CustomHttpRequest = record {
+  url : text;
+  method : text;
+  body : vec nat8;
+  headers : vec record { text; text };
+};
+type CustomHttpResponse = record {
+  body : vec nat8;
+  headers : vec record { text; text };
+  streaming_strategy : opt StreamingStrategy;
+  status_code : nat16;
+};
+type DefiniteCanisterSettings = record {
+  freezing_threshold : nat;
+  controllers : vec principal;
+  memory_allocation : nat;
+  compute_allocation : nat;
+};
+type MaintainingReason = record { created : nat64; message : text };
+type QueryFile = record {
+  created : nat64;
+  modified : nat64;
+  hash : text;
+  path : text;
+  size : nat64;
+  headers : vec record { text; text };
+};
+type StreamingCallbackHttpResponse = record {
+  token : opt StreamingCallbackToken;
+  body : vec nat8;
+};
+type StreamingCallbackToken = record {
+  end : nat64;
+  path : text;
+  headers : vec record { text; text };
+  start : nat64;
+  params : text;
+};
+type StreamingStrategy = variant {
+  Callback : record {
+    token : StreamingCallbackToken;
+    callback : func (StreamingCallbackToken) -> (
+        StreamingCallbackHttpResponse,
+      ) query;
+  };
+};
+type UploadingArg = record {
+  chunk : vec nat8;
+  path : text;
+  size : nat64;
+  headers : vec record { text; text };
+  index : nat32;
+  chunk_size : nat64;
+};
+type WalletReceiveResult = record { accepted : nat64 };
+service : {
+  __get_candid_interface_tmp_hack : () -> (text) query;
+  canister_status : () -> (CanisterStatusResponse);
+  delete : (vec text) -> ();
+  download : (text) -> (vec nat8) query;
+  download_by : (text, nat64, nat64) -> (vec nat8) query;
+  files : () -> (vec QueryFile) query;
+  http_request : (CustomHttpRequest) -> (CustomHttpResponse) query;
+  maintainable_is_maintaining : () -> (bool) query;
+  maintainable_set_maintaining : (opt MaintainingReason) -> ();
+  permission_get_admins : () -> (vec principal) query;
+  permission_is_admin : (principal) -> (bool) query;
+  permission_remove_admin : (principal) -> ();
+  permission_set_admin : (principal) -> ();
+  upload : (vec UploadingArg) -> ();
+  wallet_balance : () -> (nat) query;
+  wallet_receive : () -> (WalletReceiveResult);
+  whoami : () -> (principal) query;
+}

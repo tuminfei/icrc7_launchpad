@@ -7,6 +7,12 @@
       "type": "custom",
       "wasm": "wasm/assetstorage.wasm.gz"
     },
+    "ic_canister_assets": {
+      "candid": "wasm/ic_canister_assets.did",
+      "package": "ic_canister_assets",
+      "type": "custom",
+      "wasm": "wasm/ic_canister_assets.wasm.gz"
+    },
     "icrc7_launchpad": {
       "candid": "src/icrc7_launchpad/icrc7_launchpad.did",
       "package": "icrc7_launchpad",

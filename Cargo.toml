@@ -3,6 +3,7 @@ members = [
     "src/icrc7_launchpad",
     "src/icrc7",
     "src/icrc7_archive",
-    "src/icrc7_types"
+    "src/icrc7_types",
+    "tests"
 ]
 resolver = "2"
