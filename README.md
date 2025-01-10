@@ -40,6 +40,45 @@ sh icrc7_launchpad.sh
 
 ```
 
+## Creating Asset Storage and Uploading Assets
+
+The **ICRC7 Launchpad** also supports asset storage for uploading and managing images or files associated with your NFTs. 
+
+Follow the steps below to create asset storage and upload your assets:
+
+### 1. Deploy the Asset Storage Canister
+Run the following command to create an asset storage canister:  
+```bash
+dfx deploy ic_canister_assets
+```
+
+### 2. Organize Local Assets
+
+Place all your local assets (e.g., images, files) into the `assets` directory in your project.
+
+### 3. Set Upload Parameters
+Modify the relevant parameters in `tests/src/lib.rs` to specify details for the upload process, such as:
+- Path to the `assets` directory.
+- Metadata or configurations related to the assets.
+
+### 4. Execute the Upload Test
+Run the following command to upload the assets to the canister:
+```bash
+cargo test --package tests --lib -- --show-output
+```
+
+### 5. Retrieve Asset URLs
+After the upload is complete, the script will output the paths of the uploaded assets. Use these paths to link the uploaded images or files to your NFTs.
+
+```
+example: nft_image.jpg
+
+local network: http://{ic_canister_assets_canister_id}.raw.localhost:4943/nft_image.jpg
+
+ic network: https://{ic_canister_assets_canister_id}.raw.icp0.io/nft_image.jpg
+
+```
+
 ## ICRC7 Init
 
 ICRC7 Init args:

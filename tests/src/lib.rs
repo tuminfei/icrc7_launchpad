@@ -1,11 +1,12 @@
-const IDENTITY: &str = "deploy4";
-// const NETWORK: &str = "local";
-const NETWORK: &str = "ic";
+const IDENTITY: &str = "deploy";
+const NETWORK: &str = "local";
+// const NETWORK: &str = "ic";
 const ASSETS_DIR: &str = "../assets";
 // const ASSETS_DIR: &str = "empty"; // delete all files
 // const ASSETS_DIR: &str = "assets-test"; // test files
 const IGNORE_FILES: [&str; 4] = [".DS_Store", ".gitkeep", ".gitignore", ".git"];
 const CHUNK_SIZE: u64 = 1024 * 1024 * 2 - 1024 * 128;
+const DFX_PROGRAM: &str = "/usr/local/bin/dfx";
 
 #[derive(Debug, Clone)]
 struct LocalFile {
@@ -276,7 +277,7 @@ fn load_remote_files() -> Vec<RemoteFile> {
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards");
 
-    let output = Command::new("/Users/terry/Library/Application Support/org.dfinity.dfx/bin/dfx")
+    let output = Command::new(DFX_PROGRAM)
         .current_dir(".")
         .arg("--identity")
         .arg(IDENTITY)
@@ -429,7 +430,7 @@ fn delete_files(names: Vec<String>) {
             .join(";")
     );
 
-    let output = Command::new("/Users/terry/Library/Application Support/org.dfinity.dfx/bin/dfx")
+    let output = Command::new(DFX_PROGRAM)
         .current_dir(".")
         .arg("--identity")
         .arg(IDENTITY)
@@ -601,7 +602,7 @@ fn do_upload_file_to_canister(arg: &str, local_files: &Vec<UploadFile>) -> Resul
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards");
 
-    let output = Command::new("/Users/terry/Library/Application Support/org.dfinity.dfx/bin/dfx")
+    let output = Command::new(DFX_PROGRAM)
         .current_dir(".")
         .arg("--identity")
         .arg(IDENTITY)
