@@ -1,5 +1,8 @@
 {
     "icrc7": {
         "ic": "niqkt-7qaaa-aaaah-ad6zq-cai"
+    },
+    "ic_canister_assets": {
+        "ic": "fadih-eiaaa-aaaah-adu7q-cai"
     }
 }
