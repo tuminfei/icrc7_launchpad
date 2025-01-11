@@ -82,6 +82,20 @@ dfx deploy ic_canister_assets
 
 Place all your local assets (e.g., images, files) into the `assets` directory in your project.
 
+Supports directory synchronization, which ensures that the entire assets directory, including all subdirectories and files, is uploaded and synchronized to the canister.
+
+This process maintains the directory structure, allowing seamless access to files and directories stored in the canister.
+
+、、、
+
+assets/
+└── nft/
+    ├── nft1.png
+    ├── nft2.png
+└── nft_image.jpg
+
+、、、
+
 ### 3. Set Upload Parameters
 Modify the relevant parameters in `tests/src/lib.rs` to specify details for the upload process, such as:
 - Path to the `assets` directory.
@@ -98,10 +112,16 @@ After the upload is complete, the script will output the paths of the uploaded a
 
 ```
 example: nft_image.jpg
+         /nft/nft1.jpg
+         /nft/nft2.jpg
 
 local network: http://{ic_canister_assets_canister_id}.raw.localhost:4943/nft_image.jpg
+               http://{ic_canister_assets_canister_id}.raw.localhost:4943/nft/nft1.jpg
+               http://{ic_canister_assets_canister_id}.raw.localhost:4943/nft/nft2.jpg
 
 ic network: https://{ic_canister_assets_canister_id}.raw.icp0.io/nft_image.jpg
+            https://{ic_canister_assets_canister_id}.raw.icp0.io/nft/nft1.jpg
+            https://{ic_canister_assets_canister_id}.raw.icp0.io/nft/nft2.jpg  
 
 ```
 
