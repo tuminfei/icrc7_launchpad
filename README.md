@@ -86,7 +86,7 @@ Supports directory synchronization, which ensures that the entire assets directo
 
 This process maintains the directory structure, allowing seamless access to files and directories stored in the canister.
 
-、、、
+```
 
 assets/
 └── nft/
@@ -94,7 +94,7 @@ assets/
     ├── nft2.png
 └── nft_image.jpg
 
-、、、
+```
 
 ### 3. Set Upload Parameters
 Modify the relevant parameters in `tests/src/lib.rs` to specify details for the upload process, such as:
